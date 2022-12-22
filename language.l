@@ -35,6 +35,7 @@
 "{" {return LEFTBRACKET;}
 "}" {return RIGHTBRACKET;}
 EVAL {return EVAL;}
+TYPEOF {return TYPEOF;}
 PRINT {return PRINT;}
 [ \t] ;
 \n {yylineno++;}
