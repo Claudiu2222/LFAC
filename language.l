@@ -28,6 +28,8 @@
 "/" {return DIVISION;}
 @[_a-zA-Z][_a-zA-Z0-9]* {yylval.strval = strdup(yytext); return ID;}
 ":=" {return ASSIGN;}
+\'.\' {yylval = strdup(yytext);return CHAR;}
+\".*\" {yylval = strdup(yytext);return STRING;}
 [-]?[1-9][0-9]*|0 {yylval.val = atoi(yytext); return NUMBER;}
 [-]?[1-9][0-9]*[.][0-9]+|0[.][0-9]+ {yylval.strval = strdup(yytext);return FLOAT;}
 "{" {return LEFTBRACKET;}
