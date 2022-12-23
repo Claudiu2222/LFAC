@@ -4,7 +4,7 @@
 %}
 %option noyywrap
 %%
-"int"|"float"|"char"|"string"|"bool" {yylval.strval = strdup(yytext); return TYPE;}
+"int"|"float"|"char"|"string"|"bool" {yylval.strVal = strdup(yytext); return TYPE;}
 "begin_progr" {return BEGIN;}
 "end_progr" {return END;}
 "const" {return CONSTANT;}
@@ -26,12 +26,12 @@
 "-" {return MINUS;}
 "*" {return MULTIPLICATION;}
 "/" {return DIVISION;}
-@[_a-zA-Z][_a-zA-Z0-9]* {yylval.strval = strdup(yytext); return ID;}
+@[_a-zA-Z][_a-zA-Z0-9]* {yylval.strVal = strdup(yytext); return ID;}
 ":=" {return ASSIGN;}
 \'.\' {yylval = strdup(yytext);return CHAR;}
 \".*\" {yylval = strdup(yytext);return STRING;}
-[-]?[1-9][0-9]*|0 {yylval.val = atoi(yytext); return NUMBER;}
-[-]?[1-9][0-9]*[.][0-9]+|0[.][0-9]+ {yylval.strval = strdup(yytext);return FLOAT;}
+[-]?[1-9][0-9]*|0 {yylval.intVal = atoi(yytext); return NUMBER;}
+[-]?[1-9][0-9]*[.][0-9]+|0[.][0-9]+ {yylval.strVal = strdup(yytext);return FLOAT;}
 "{" {return LEFTBRACKET;}
 "}" {return RIGHTBRACKET;}
 EVAL {return EVAL;}
