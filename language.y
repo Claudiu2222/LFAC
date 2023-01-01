@@ -9,8 +9,10 @@ extern int yylineno;
   int intVal;
   float floatVal;
 }
-%token TYPE BEGIN END CONSTANT IF ELSE WHILE FOR CLASS ACESSMODIFIER BOOLEANVALUE LESSTHAN LESSOREQUALTHAN GREATERTHAN GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTYPELICATION DIVISION ID ASSIGN CHAR STRING NUMBER FLOAT LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
+%token TYPE BEGIN_PR END_PR CONSTANT IF ELSE WHILE FOR CLASS BOOLEANVALUE LESSTHAN LESSOREQUALTHAN GREATERTHAN GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ID ASSIGN CHAR STRING NUMBER FLOAT LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
 %start progr
+%left '+' '-'
+%left '*' '/'
 %%
 progr: declaratii bloc {printf("program corect sintactic\n");}
      ;
@@ -21,6 +23,7 @@ declaratii :  declaratie ';'
 declaratie : TYPE ID 
            | TYPE ID '(' lista_param ')'
            | TYPE ID '(' ')'
+           | CLASS ID '{' declaratii '}'
            ;
 lista_param : param
             | lista_param ','  param 
@@ -30,7 +33,7 @@ param : TYPE ID
       ; 
       
 /* bloc */
-bloc : BEGIN list END  
+bloc : BEGIN_PR list END_PR  
      ;
      
 /* lista instructiuni */
