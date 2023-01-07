@@ -13,7 +13,6 @@
 "while" {return WHILE;}
 "for" {return FOR;}
 "class" {return CLASS;}
-
 "true"|"false" {return BOOLEANVALUE;}
 "<" {return LESSTHAN;}
 "<=" {return LESSOREQUALTHAN;}
@@ -26,7 +25,10 @@
 "-" {return MINUS;}
 "*" {return MULTIPLICATION;}
 "/" {return DIVISION;}
-@[_a-zA-Z][_a-zA-Z0-9]* {yylval.strVal = strdup(yytext); return ID;}
+EVAL {return EVAL;}
+TYPEOF {return TYPEOF;}
+PRINT {return PRINT;}
+[_a-zA-Z][_a-zA-Z0-9]* {yylval.strVal = strdup(yytext); return ID;}
 ":=" {return ASSIGN;}
 \'.\' {yylval.strVal = strdup(yytext);return CHAR;}
 \".*\" {yylval.strVal = strdup(yytext);return STRING;}
@@ -34,9 +36,6 @@
 [-]?[1-9][0-9]*[.][0-9]+|0[.][0-9]+ {yylval.strVal = strdup(yytext);return FLOAT;}
 "{" {return LEFTBRACKET;}
 "}" {return RIGHTBRACKET;}
-EVAL {return EVAL;}
-TYPEOF {return TYPEOF;}
-PRINT {return PRINT;}
 [ \t] ;
 \n {yylineno++;}
 . {return yytext[0];}

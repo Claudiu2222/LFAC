@@ -1,0 +1,4 @@
+int[32] SDASDAS ;
+begin_progr
+int dx;
+end_progr
