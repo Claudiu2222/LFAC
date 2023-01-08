@@ -1,4 +1,12 @@
-int[32] SDASDAS ;
+class ceva { 
+    int altceva;
+} 
+int mare(int cevadd){
+    int ok;
+}
+class ceva2 { 
+    int altceva2;
+} 
 begin_progr
 int dx;
 end_progr

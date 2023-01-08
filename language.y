@@ -28,21 +28,21 @@ leftbracket: LEFTBRACKET // add scope stuff
            ;
 rightbracket: RIGHTBRACKET // add scope stuff
                ;
-declaratie : TYPE ID ';' {printf("%s", yyval.strVal);}//variable 
+declaratie : TYPE ID ';' {printf("%s ", $1);}//variable 
            | TYPE ID ASSIGN NUMBER ';' //variable
-           | TYPE ID '(' lista_param ')' leftbracket declaratii_functii rightbracket //function
+           | TYPE ID '(' lista_param ')' leftbracket declaratii_functii rightbracket  {printf ("FUNCTIE %s\n", $2);}//function
            | TYPE '[' NUMBER ']' ID ';' // array
-           | CLASS ID leftbracket declaratii_clasa rightbracket
+           | CLASS ID leftbracket declaratii_clasa rightbracket {printf(" %s \n", $2);}
            ;
 
 
-declaratii_functii: declaratii_functii declaratie_functie ';'
-                  | declaratie_functie ';'
+declaratii_functii: declaratii_functii declaratie_functie 
+                  | declaratie_functie 
                   ;
 declaratie_functie:  TYPE '[' NUMBER ']' ID ';' // array
                | TYPE ID ';' //variable
                | TYPE ID ASSIGN NUMBER ';' //variable
-               ;
+               ; // add more
 
 lista_param : param
             | lista_param ','  param 
@@ -55,6 +55,7 @@ declaratii_clasa :
 declaratie_clasa : TYPE ID ';'
                  | TYPE ID '(' lista_param ')' ';'
                  | TYPE ID '(' ')' ';'
+                 // add more
                  ;
 param : TYPE ID
       ; 
@@ -63,7 +64,7 @@ param : TYPE ID
 bloc : BEGIN_PR list END_PR  
      ;
      
-/* lista instructiuni */
+/* lista instructiuni (pt main)*/
 list :  statement 
      | list statement 
      ;
