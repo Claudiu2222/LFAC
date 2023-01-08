@@ -2,41 +2,40 @@
 #include <stdio.h>
 #include "y.tab.h"
 %}
-/* write me a lexer for int float char string bool types */
-
-
+%option noyywrap
 %%
-"int"|"float"|"char"|"string"|"bool" {yylval.strval = strdup(yytext); return TYPE;}
-"begin_progr" {return BEGIN;}
-"end_progr" {return END;}
-"constant" {return CONSTANT;}
+"int"|"float"|"char"|"string"|"bool" {yylval.strVal = strdup(yytext); return TYPE;}
+"begin_progr" {return BEGIN_PR;}
+"end_progr" {return END_PR;}
+"const" {return CONSTANT;}
 "if" {return IF;}
 "else" {return ELSE;}
 "while" {return WHILE;}
 "for" {return FOR;}
 "class" {return CLASS;}
-"private"|"protected"|"public" {return ACESSMODIFIER;}
 "true"|"false" {return BOOLEANVALUE;}
 "<" {return LESSTHAN;}
 "<=" {return LESSOREQUALTHAN;}
 ">" {return GREATERTHAN;}
 ">=" {return GREATEROREQUALTHAN;}
+"&&" {return AND;}
+"||" {return OR;}
+"!" {return NEGATION;}
 "+" {return PLUS;}
 "-" {return MINUS;}
 "*" {return MULTIPLICATION;}
 "/" {return DIVISION;}
-"&&" {return AND;}
-"||" {return OR;}
-"!" {return NEGATION;}
-@[_a-zA-Z][_a-zA-Z0-9]* {yylval.strval = strdup(yytext); return ID;}
+EVAL {return EVAL;}
+TYPEOF {return TYPEOF;}
+PRINT {return PRINT;}
+[_a-zA-Z][_a-zA-Z0-9]* {yylval.strVal = strdup(yytext); return ID;}
 ":=" {return ASSIGN;}
-[1-9]+[0-9]* {yylval.val = atoi(yytext); return NR; }
-0+[0-9]* {yylval.strval = strdup(yytext);return FLT;}
-0 {yylval.val = atoi(yytext);return NR;}
+\'.\' {yylval.strVal = strdup(yytext);return CHAR;}
+\".*\" {yylval.strVal = strdup(yytext);return STRING;}
+[-]?[1-9][0-9]*|0 {yylval.intVal = atoi(yytext); return NUMBER;}
+[-]?[1-9][0-9]*[.][0-9]+|0[.][0-9]+ {yylval.strVal = strdup(yytext);return FLOAT;}
 "{" {return LEFTBRACKET;}
 "}" {return RIGHTBRACKET;}
-EVAL {return EVAL;}
-PRINT {return PRINT;}
 [ \t] ;
 \n {yylineno++;}
 . {return yytext[0];}

@@ -1,0 +1,3 @@
+begin_progr
+int xd;
+end_progr
