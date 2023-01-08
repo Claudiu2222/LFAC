@@ -1,4 +1,5 @@
-int xd;
+int x := a[30];
+x := 30 + a[390];
 begin_progr
-int dx;
+int xd;
 end_progr
