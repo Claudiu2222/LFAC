@@ -1,4 +1,4 @@
-int buna := 2;
+int xd;
 begin_progr
 int dx;
 end_progr

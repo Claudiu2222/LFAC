@@ -4,8 +4,40 @@ extern FILE* yyin;
 extern char* yytext;
 extern int yylineno;
 
+#define FALSE 0
+#define TRUE 1
+
+#define CHARACTERVAL 1
+#define BOOLEANVAL 2
+#define INTEGERVAL 3
+#define FLOATVAL 4
+#define STRINGVAL 5
+
+#define GLOBAL 0
+
 extern int yylex();
 void yyerror(char * s);
+struct symbol{
+     char name[50];
+     int type;
+     int scope;
+     int isConstant;
+     int isFunction;
+     int isClass;
+     char charValue;
+     int boolValue;
+     float floatValue;
+     char *stringValue;
+     int *integerVector;
+     char *characterVector;
+	char **stringVector;
+     int vectorSize;
+
+
+}symbolTable[100];
+
+int scope=0;
+
 %}
 %union {
   char* strVal;
