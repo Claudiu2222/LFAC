@@ -21,13 +21,14 @@ extern int yylineno;
 progr: declaratii bloc {printf("program corect sintactic\n");}
      ;
  
-declaratii :  declaratie 
+declaratii :  /*#epsilon#*/
+        | declaratie 
 	   | declaratii declaratie 
 	   ;
 leftbracket: LEFTBRACKET // add scope stuff
            ;
 rightbracket: RIGHTBRACKET // add scope stuff
-               ;
+            ;
 declaratie : TYPE ID ';' {printf("%s ", $1);}//variable 
            | TYPE ID ASSIGN NUMBER ';' //variable
            | TYPE ID '(' lista_param ')' leftbracket declaratii_functii rightbracket  {printf ("FUNCTIE %s\n", $2);}//function
@@ -60,7 +61,7 @@ declaratie_clasa : TYPE ID ';'
 param : TYPE ID
       ; 
       
-/* bloc */
+/* bloc main */
 bloc : BEGIN_PR list END_PR  
      ;
      

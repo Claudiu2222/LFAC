@@ -1,12 +1,3 @@
-class ceva { 
-    int altceva;
-} 
-int mare(int cevadd){
-    int ok;
-}
-class ceva2 { 
-    int altceva2;
-} 
 begin_progr
-int dx;
+int xd;
 end_progr
