@@ -3,6 +3,9 @@
 extern FILE* yyin;
 extern char* yytext;
 extern int yylineno;
+
+extern int yylex();
+void yyerror(char * s);
 %}
 %union {
   char* strVal;
@@ -82,7 +85,7 @@ lista_apel : NUMBER
            | lista_apel ',' NUMBER
            ;
 %%
-int yyerror(char * s){
+void yyerror(char * s){
 printf("eroare: %s la linia:%d\n",s,yylineno);
 printf("current token: %s\n",yytext);
 

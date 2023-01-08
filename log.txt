@@ -1,0 +1,4 @@
+[7:22 am 08.01.2023]
+* Am modificat Makefile pentru a il face mai simplu si productiv
+* "make"      -> creeaza si sterge fisierele in plus
+* "make run"  -> creeaza si sterge, dar ruleaza automat ceea ce ai in input.txt

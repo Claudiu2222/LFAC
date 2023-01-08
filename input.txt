@@ -1,0 +1,4 @@
+int buna := 2;
+begin_progr
+int dx;
+end_progr
