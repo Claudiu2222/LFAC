@@ -1,5 +1,5 @@
-int x := a[30];
-x := 30 + a[390];
+int x := 30+10*(100/(20*5)*10-3*1000);
+
 begin_progr
 int xd;
 end_progr

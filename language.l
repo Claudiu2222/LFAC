@@ -35,8 +35,8 @@ PRINT {return PRINT;}
 ":=" {return ASSIGN;}
 \'.\' {yylval.charVal = yytext[1];return CHAR;}
 \".*\" {yylval.strVal = strdup(yytext); strcpy(yylval.strVal, yylval.strVal+1 ); yylval.strVal[strlen(yylval.strVal)-1]='\0';return STRING;}
-[-]?[1-9][0-9]*|0 {yylval.intVal = atoi(yytext); return NUMBER;}
-[-]?[1-9][0-9]*[.][0-9]+|0[.][0-9]+ {yylval.floatVal = atof(yytext);return FLOAT;}
+[1-9][0-9]*|0 {yylval.intVal = atoi(yytext); return NUMBER;}
+[1-9][0-9]*[.][0-9]+|0[.][0-9]+ {yylval.floatVal = atof(yytext);return FLOAT;}
 "{" {return LEFTBRACKET;}
 "}" {return RIGHTBRACKET;}
 [ \t] ;
