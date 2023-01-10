@@ -35,7 +35,13 @@ struct symbol{
 
 
 }symbolTable[100];
-
+struct informatii{
+     int intVal;
+     char strVal[256];
+     float floatVal;
+     char charVal;
+     int type;
+};
 int scope=0;
 
 %}
@@ -45,6 +51,8 @@ int scope=0;
   double floatVal;
   char* boolVal;
   char charVal;
+
+  struct informatii *info;
 }
 %token BEGIN_PR END_PR CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
 
@@ -55,6 +63,8 @@ int scope=0;
 %token <floatVal>FLOAT
 %token <charVal>CHAR
 %token <strVal>STRING
+
+%type<info>expresii
 %start progr
 
 %left LESSTHAN LESSOREQUALTHAN GREATERTHAN GREATEROREQUALTHAN EQUAL
@@ -82,40 +92,37 @@ declaratie : declaratii_comune
            | CLASS ID leftbracket declaratii_clasa rightbracket {printf(" %s \n", $2);}    
            ;
 declaratii_comune: TYPE ID ';' //{printf("%s ", $2);}//variable 
-                 | TYPE ID ASSIGN {scope=1; } assignedValue ';' //variable or array - assign
+                 | TYPE ID ASSIGN {scope=1; } expresii ';' {printf("===\n%d\n===",$5->intVal);free($5); } //variable or array - assign
                  | TYPE '[' NUMBER ']' ID ';' // array
                  | TYPE '[' NUMBER ']' ID ASSIGN ID';' // array int[50] arra1 = array2;
-                 | ID ASSIGN {scope=1; } assignedValue ';' //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
-                 | ID '[' NUMBER ']' ASSIGN {scope=1; } assignedValue ';' // array at index NUMBER = assignedValue
-
-assignedValue:  expresii  
-                |NUMBER {if(scope==1) {printf(" %d ", $1);}}
-                | ID {if(scope==1) {printf("AICI VA FI O VARIABILA");}}
-                | FLOAT {if(scope==1) {printf(" %f flt ", $1);}}
-                | CHAR {if(scope==1) {printf(" %c ddddd", $1);}}
-                | STRING {if(scope==1) {printf("|%s|", $1);}}
-                | ID '(' lista_argumente ')' {if(scope==1) {printf("\n AICI VA FI UN APEL DE FUNCTIE \n");}} // PT FUNCTION CALL
-                | ID '.' ID '(' lista_argumente ')'{ printf("\n AICI E UN METHOD CALL \n");} //method call
-                | ID '[' NUMBER ']'{ printf("\n NOT IN EXPR \n");} 
+                 | ID ASSIGN {scope=1; } expresii ';' {free($4);} //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
+                 | ID '[' NUMBER ']' ASSIGN {scope=1; } expresii ';' {free($7);}// array at index NUMBER = assignedValue
+               ;
+//assignedValue:  expresii  
+              //  |NUMBER {if(scope==1) {printf(" %d ", $1);}}
+              //  | ID {if(scope==1) {printf("AICI VA FI O VARIABILA");}}
+              //  | FLOAT {if(scope==1) {printf(" %f flt ", $1);}}
+              //  | CHAR {if(scope==1) {printf(" %c ddddd", $1);}}
+              //  | STRING {if(scope==1) {printf("|%s|", $1);}}
+              //  | ID '(' lista_argumente ')' {if(scope==1) {printf("\n AICI VA FI UN APEL DE FUNCTIE \n");}} // PT FUNCTION CALL
+              //  | ID '.' ID '(' lista_argumente ')'{ printf("\n AICI E UN METHOD CALL \n");} //method call
+              //  | ID '[' NUMBER ']'{ printf("\n NOT IN EXPR \n");} 
                 ;
-expresii: //exista conflicte cu NUMBER ID FLOAT etc din assignedVAlue, dar le ia pe cele din assignedValue intai
-           // ceea ce e bine, dar nush dc. Daca de ex le scoti din assignedValue o sa le ia pe alea din expresii( wrong)
-           // dar ma gandeam oricum cum ar merge fixat conflictul, nu stiu daca e o idee buna sa il fixam ca la mn cel putin nu apar probleme le ia mereu corect
-           // spun sa lasam asa momentan
-           expresii MULTIPLICATION expresii {printf(" * \n");}
-          | expresii DIVISION expresii {printf(" / \n");}
-          | expresii AND expresii {printf(" && \n");}
-          | expresii OR expresii {printf(" || \n");}
-          | expresii LESSTHAN expresii {printf(" < \n");}
+expresii:  expresii MULTIPLICATION expresii {struct informatii *temp=(struct informatii*)malloc(sizeof(struct informatii)); printf(" just checking : %d \n",$1->intVal * $3->intVal); temp->intVal=$1->intVal * $3->intVal;free($1);free($3); $$=temp;}
+          | expresii DIVISION expresii {struct informatii *temp=(struct informatii*)malloc(sizeof(struct informatii)); printf(" just checking : %d \n",$1->intVal / $3->intVal);temp->intVal=$1->intVal / $3->intVal;free($1);free($3); $$=temp;}
+          | expresii AND expresii {printf(" && \n"); struct informatii *temp=(struct informatii*)malloc(sizeof(struct informatii)); printf(" Got to add checking functions soon");free($1);free($3); $$=temp;}
+          | expresii OR expresii {printf(" || \n"); struct informatii *temp=(struct informatii*)malloc(sizeof(struct informatii)); printf(" Got to add checking functions soon");free($1);free($3); $$=temp;}
+          | expresii LESSTHAN expresii {printf(" < \n"); struct informatii *temp=(struct informatii*)malloc(sizeof(struct informatii)); printf(" Got to add checking functions soon");free($1);free($3); $$=temp;}
           | expresii LESSOREQUALTHAN expresii {printf(" <= \n");}
           | expresii GREATERTHAN expresii {printf(" > \n");}
           | expresii GREATEROREQUALTHAN expresii {printf(" >= \n");}
           | expresii EQUAL expresii {printf(" == \n");}
           | NEGATION expresii {printf(" ! \n");}
-          |expresii PLUS expresii {printf(" + \n");}
-          | expresii MINUS expresii {printf(" - \n");}
-          | '(' expresii ')' {printf(" ( ) \n");}
-          | NUMBER {printf(" %d  IN EXPR", $1);}
+          | expresii PLUS expresii {printf(" + \n"); ; struct informatii *temp=(struct informatii*)malloc(sizeof(struct informatii)); printf(" just checking : %d \n",$1->intVal + $3->intVal);temp->intVal=$1->intVal + $3->intVal;free($1);free($3); $$=temp;}
+          | expresii MINUS expresii {printf(" - \n"); ; struct informatii *temp=(struct informatii*)malloc(sizeof(struct informatii)); printf(" just checking : %d \n",$1->intVal + $3->intVal); temp->intVal=$1->intVal - $3->intVal;free($1);free($3); $$=temp;}
+          | '(' expresii ')' {printf(" ( ) \n"); $$=$2;}
+          | MINUS expresii {printf(" - ceva \n"); struct informatii *temp=(struct informatii*)malloc(sizeof(struct informatii));temp->intVal=$2->intVal-2*$2->intVal; free($2);$$=temp;}
+          | NUMBER {printf(" %d  IN EXPR", $1);struct informatii *temp=(struct informatii*)malloc(sizeof(struct informatii)); temp->intVal=$1; $$=temp; } 
           | ID      {printf(" %s IN EXPR", $1);}
           | FLOAT  {printf(" %f IN EXPR", $1);}
           | CHAR  {printf(" %c IN EXPR", $1);}
@@ -124,7 +131,7 @@ expresii: //exista conflicte cu NUMBER ID FLOAT etc din assignedVAlue, dar le ia
           | ID '.' ID '(' lista_argumente ')'  //method call
           | BOOLEANVALUE {printf(" %s IN EXPR", $1);}
           | ID '[' NUMBER ']'  {printf(" %s IN EXPR", $1);} // array at index NUMBER
-          | ID '.' ID   //method call
+          | ID '.' ID   // class attribute
 
           ;
          
