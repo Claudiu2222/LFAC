@@ -524,8 +524,8 @@ void printInfo()
                printf("Number of parameters of symbol[%d]:%d\n", i, symbolTable[i].numberOfParameters);
                for(int j=0; j<symbolTable[i].numberOfParameters; j++)
                {
-                    printf("---Name of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].name);
-                    printf("---Type of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].info.type);
+                    printf("--->Name of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].name);
+                    printf("--->Type of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].info.type);
                }
           }
           
@@ -957,39 +957,41 @@ void unaryNegation(struct informations* finalExp, struct informations* leftExp)
 void calculate(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp, int typeOfOperation)
 {
      if(rightExp!=NULL)
-     {if(strcmp(leftExp->type, rightExp->type) != 0)
-          {    free(finalExp);
-               free(leftExp);
-               free(rightExp);
-               yyerror("[!]Type mismatch");}
-     if(typeOfOperation == OP_PLUS)
-          add(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_MINUS)
-          subtract(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_MULTIPLICATION)
-          multiply(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_DIVISION)
-          divide(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_EQUAL)
-          equal(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_LESSTHAN)
-          lessThan(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_LESSOREQUALTHAN)
-          lessOrEqualThan(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_GREATERTHAN)
-          greaterThan(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_GREATEROREQUALTHAN)
-          greaterOrEqualThan(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_AND)
-          and(finalExp, leftExp, rightExp);
-     else if(typeOfOperation == OP_OR)
-          or(finalExp, leftExp, rightExp);
+          {if(strcmp(leftExp->type, rightExp->type) != 0)
+               {    free(finalExp);
+                    free(leftExp);
+                    free(rightExp);
+                    yyerror("[!]Type mismatch");}
+          if(typeOfOperation == OP_PLUS)
+               add(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_MINUS)
+               subtract(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_MULTIPLICATION)
+               multiply(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_DIVISION)
+               divide(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_EQUAL)
+               equal(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_LESSTHAN)
+               lessThan(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_LESSOREQUALTHAN)
+               lessOrEqualThan(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_GREATERTHAN)
+               greaterThan(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_GREATEROREQUALTHAN)
+               greaterOrEqualThan(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_AND)
+               and(finalExp, leftExp, rightExp);
+          else if(typeOfOperation == OP_OR)
+               or(finalExp, leftExp, rightExp);
+          return;
      }
      else{
           if(typeOfOperation == OP_NEGATION)
           negation(finalExp, leftExp);
           else if(typeOfOperation == OP_UNARYMINUS)
           unaryNegation(finalExp,leftExp);
+          return;
      }
      return;
      yyerror("[!]Illegal operation");
