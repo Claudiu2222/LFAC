@@ -96,6 +96,7 @@ char* scopeStack[MAXSYMBOLS];
 char* globalStack[MAXSYMBOLS];
 int symbolTableIndex = 0;
 
+
 void addParameterToFunction(struct symbol* functie, struct parameter* param);
 void addFunctionToTable(char* type, char *name,  int scope);
 void addVariableToTable(char *name, char* type, int scope, int isConstant, struct informations *info );
@@ -117,9 +118,10 @@ void initGlobalStack();
 void initScopeStack();
 void pushGlobalStack(const char* name);
 void pushScopeStack();
-
+void deleteElementsFromScopeStack();
 void changeScope();
 void revertScope();
+void printStackValues();
 
 int wasDefinedInGlobalScope(const char* name);
 int wasDefinedInCurrentScope(const char* name);
@@ -184,7 +186,7 @@ declaratii_comune: TYPE ID ';'
                     {addVariableToTable($2, $1, scope, NONCONSTANT , 0);}//variable
 
                  | TYPE ID ASSIGN  expresii ';' 
-                    {addVariableToTable($2, $1, scope, NONCONSTANT , $4); free($4);} //variable or array - assign
+                    {addVariableToTable($2, $1, scope, NONCONSTANT , $4); free($4); } //variable or array - assign
 
                  | TYPE '[' NUMBER ']' ID ';' // array
                  | TYPE '[' NUMBER ']' ID ASSIGN ID';' // array int[50] arra1 = array2;
@@ -264,14 +266,14 @@ arg: ID
 bloc : BEGIN_PR leftbracket list rightbracket  
      ;
      
-if_statement: IF '(' expresii ')' leftbracket declaratii_if rightbracket
-            | IF '(' expresii ')' leftbracket declaratii_if rightbracket ELSE leftbracket declaratii_if rightbracket
+if_statement:IF '(' expresii ')' leftbracket declaratii_if RIGHTBRACKET ELSE  leftbracket declaratii_if {scope--;} rightbracket  
+|           |IF '(' expresii ')' leftbracket declaratii_if rightbracket  
             ;
 declaratii_if: declaratii_if declaratie_if
              | declaratie_if
              ;
 declaratie_if: declaratii_comune
-               | if_statement
+               | if_statement 
                ;
 /* lista instructiuni (pt main)*/
 list :  statement 
@@ -304,11 +306,11 @@ printInfo();
 
 // -- Functions --
 struct informations* getInformationFromTable(const char* name) {
-     printf(" %s IN GETINFO ", name);
+  //   printf(" %s IN GETINFO ", name);
      
      for (int i = 0; i < symbolTableIndex; i++) {
           if(strcmp(symbolTable[i].name, name) == 0) {
-               printf(" %s IN GETINFO ", symbolTable[i].name);
+             //  printf(" %s IN GETINFO ", symbolTable[i].name);
                
                struct informations* temp = (struct informations*)malloc(sizeof(struct informations));
                strcpy(temp->type, symbolTable[i].type);
@@ -341,7 +343,16 @@ int wasDefinedInGlobalScope(const char* name){
 int wasDefinedInCurrentScope(const char* name) {
      for(int i=0; i < MAXSYMBOLS; i++) {
           if(strcmp(scopeStack[i], name) == 0)
-               return 1;
+               // Cautam scopeStack[i] in symbolTable
+               {
+                    for (int j = 0; j < symbolTableIndex; j++) {
+                         if(strcmp(symbolTable[j].name, scopeStack[i]) == 0) {
+                              if(symbolTable[j].scope == scope)
+                                   return 1;
+                         }
+                    }
+               }
+               
           if(strcmp(scopeStack[i], "-1") == 0)
                return 0;
      } 
@@ -1037,7 +1048,8 @@ void pushScopeStack(const char* name){
                strcpy(scopeStack[i], name);
                break;
           }
-     }
+    }
+     
 }
 
 void changeScope() 
@@ -1047,9 +1059,15 @@ void changeScope()
           diffScope = scope;
      } else {
           scope = scope + 1;
+          
      }
 }
 
+void printStackValues(){ // for testing
+     printf("STACK VALUES: ");
+     for(int i=0; i<MAXPARAMETERS;i++)
+     printf("%s,",scopeStack[i]);
+}
 void revertScope()
 {
      if (scope - diffScope == 0) {

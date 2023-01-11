@@ -32,7 +32,7 @@ EVAL {return EVAL;}
 TYPEOF {return TYPEOF;}
 PRINT {return PRINT;}
 [_a-zA-Z][_a-zA-Z0-9]* {yylval.strVal = strdup(yytext); return ID;}
-":=" {return ASSIGN;}
+"=" {return ASSIGN;}
 \'.\' {yylval.charVal = yytext[1];return CHAR;}
 \".+\" {yylval.strVal = strdup(yytext); yylval.strVal=strtok(yylval.strVal,"\""); /*printf("====\n%s\n====",yylval.strVal);*/return STRING;}
 [1-9][0-9]*|0 {yylval.intVal = atoi(yytext); return NUMBER;}
