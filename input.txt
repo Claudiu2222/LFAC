@@ -1,5 +1,20 @@
-int x := 30+10*(100/(20*5)*10-3*1000);
-
+bool x:= true;
+int xd:=23* 10 - 23 -7*2;
+int functie(int functieType, int cevatip,bool db){
+    int dx;
+    int functieTyp;
+    int db;
+}
+int functiee(int functieType){
+    int cev;
+    
+    int functieTyped;
+}
 begin_progr
-int xd;
+{
+
+int xdd;
+int cevatip;
+int functieType;
+}
 end_progr
