@@ -216,7 +216,7 @@ expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct i
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER
           | ID '.' ID   // class attribute
-          | ID      {struct informations *temp = (struct informations*)getInformationFromTable($1); $$=temp;} 
+          | ID      {printf("Mor aici\n"); struct informations *temp = getInformationFromTable($1); $$=temp;} 
 
           ;
 //ifStatement
@@ -304,55 +304,22 @@ printInfo();
 
 // -- Functions --
 struct informations* getInformationFromTable(const char* name) {
-     for(int i=0; i < MAXSYMBOLS; i++) {
-          if(strcmp(symbolTable[i].name, name) == 0)
-          {
-//               struct informations{
-//     int intVal;
-//     char boolVal[6];
-//     char strVal[256];
-//     float floatVal;
-//     char charVal;
-//     char type[10];
-//};
-//struct parameter{
-//     char name[50];
-//     struct informations info;
-//};
-//struct symbol{
-//     char name[50]; // 
-//     char type[30];     //
-//     int scope;    // 
-//     int isConstant; //
-//     int typeOfObject; //
-//     char charValue;
-//     int intVal;
-//     char* boolValue;
-//     float floatValue;
-//     char *stringValue;
-//     int *integerVector;
-//     char *characterVector;
-//	char **stringVector;
-//     int vectorSize;
-//     int isPrivate;
-//     
-//     struct parameter parameters[MAXPARAMETERS];
-//     int numberOfParameters;
-//
-//
-//}symbolTable[MAXSYMBOLS];
-
-               struct informations *temp=(struct informations*)malloc(sizeof(struct informations));
+     printf(" %s IN GETINFO ", name);
+     
+     for (int i = 0; i < symbolTableIndex; i++) {
+          if(strcmp(symbolTable[i].name, name) == 0) {
+               printf(" %s IN GETINFO ", symbolTable[i].name);
+               
+               struct informations* temp = (struct informations*)malloc(sizeof(struct informations));
+               strcpy(temp->type, symbolTable[i].type);
                temp->intVal = symbolTable[i].intVal;
-               strcpy(temp->boolVal, symbolTable[i].boolValue);
-               strcpy(temp->strVal, symbolTable[i].stringValue);
                temp->floatVal = symbolTable[i].floatValue;
                temp->charVal = symbolTable[i].charValue;
-               strcpy(temp->type, symbolTable[i].type);
-
+               if (symbolTable[i].stringValue != NULL) strcpy(temp->strVal, symbolTable[i].stringValue);
+               if (symbolTable[i].boolValue != NULL) strcpy(temp->boolVal, symbolTable[i].boolValue);
                return temp;
           }
-     } 
+     }
      
      // If nu exista variabila ;)
      char error_message[100];
