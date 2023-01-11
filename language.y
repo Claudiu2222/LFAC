@@ -88,7 +88,6 @@ struct symbol{
 
 }symbolTable[MAXSYMBOLS];
 
-
 int scope = 0;
 int last_scope = -1;
 int diffScope = 0;
@@ -112,7 +111,7 @@ void divide(struct informations* finalExp, struct informations* leftExp, struct 
 void calculate(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp, int typeOfOperation);
 void verifyTypes(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp);
 void showStack();
-
+struct symbol* lookUpElement(const char* name);
 // Scope System
 void initGlobalStack();
 void initScopeStack();
@@ -122,7 +121,7 @@ void deleteElementsFromScopeStack();
 void changeScope();
 void revertScope();
 void printStackValues();
-
+void test(const char* name);
 int wasDefinedInGlobalScope(const char* name);
 int wasDefinedInCurrentScope(const char* name);
 // ---- 
@@ -139,7 +138,7 @@ struct informations* getInformationFromTable(const char* name);
   struct informations *info;
   struct parameter *param;
 }
-%token BEGIN_PR END_PR CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
+%token BEGIN_PR END_PR RETURN CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
 
 %token <strVal>TYPE
 %token <intVal>NUMBER
@@ -179,7 +178,7 @@ rightbracket: RIGHTBRACKET {revertScope();}
             ;
 
 declaratie : declaratii_comune {printf("ies din declaratie\n");}
-           | TYPE ID {addFunctionToTable($1, $2, scope);} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET declaratii_functii rightbracket //function
+           | TYPE ID {addFunctionToTable($1, $2, scope);} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET declaratii_functii RETURN returnedvalue rightbracket //function
            | CLASS ID leftbracket declaratii_clasa rightbracket {printf(" %s \n", $2);}    
            ;
 declaratii_comune: TYPE ID ';' 
@@ -190,7 +189,7 @@ declaratii_comune: TYPE ID ';'
 
                  | TYPE '[' NUMBER ']' ID ';' // array
                  | TYPE '[' NUMBER ']' ID ASSIGN ID';' // array int[50] arra1 = array2;
-                 | ID ASSIGN expresii ';' {free($3);} //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
+                 | ID ASSIGN expresii ';' { free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
                  | ID '[' NUMBER ']' ASSIGN expresii ';' {free($6);}// array at index NUMBER = assignedValue
                  | CONSTANT TYPE ID ASSIGN expresii ';' {addVariableToTable($3, $2, scope, CCONSTANT , $5); free($5); }//variable // const id = 2 + 3;
                  ;
@@ -218,7 +217,7 @@ expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct i
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER
           | ID '.' ID   // class attribute
-          | ID      {printf("Mor aici\n"); struct informations *temp = getInformationFromTable($1); $$=temp;} 
+          | ID      {printf("Mor aici\n"); struct informations *temp = getInformationFromTable($1); test($1); $$=temp;} 
 
           ;
 //ifStatement
@@ -229,7 +228,14 @@ declaratie_functie: declaratii_comune
                   | if_statement
                   ; // add more
 
-
+returnedvalue: ID
+               | NUMBER 
+               | FLOAT
+               | BOOLEANVALUE
+               | STRING
+               | CHAR
+               | ID '[' NUMBER ']' // array at index NUMBER
+               ;
 
 lista_parametri : /*epsilon*/ 
             | parametru {addParameterToFunction(&symbolTable[symbolTableIndex-1], $1);}
@@ -262,6 +268,7 @@ arg: ID
     | ID '[' NUMBER ']'
     | ID '.' ID
     ;
+
 /* bloc main */
 bloc : BEGIN_PR leftbracket list rightbracket  
      ;
@@ -308,6 +315,7 @@ printInfo();
 struct informations* getInformationFromTable(const char* name) {
   //   printf(" %s IN GETINFO ", name);
      
+     /*
      for (int i = 0; i < symbolTableIndex; i++) {
           if(strcmp(symbolTable[i].name, name) == 0) {
              //  printf(" %s IN GETINFO ", symbolTable[i].name);
@@ -322,7 +330,20 @@ struct informations* getInformationFromTable(const char* name) {
                return temp;
           }
      }
+      
+     */
      
+     struct symbol* temp = lookUpElement(name);
+     struct informations* temp2 = (struct informations*)malloc(sizeof(struct informations));
+     if (temp != NULL) {
+          strcpy(temp2->type, temp->type);
+          temp2->intVal = temp->intVal;
+          temp2->floatVal = temp->floatValue;
+          temp2->charVal = temp->charValue;
+          if (temp->stringValue != NULL) strcpy(temp2->strVal, temp->stringValue);
+          if (temp->boolValue != NULL) strcpy(temp2->boolVal, temp->boolValue);
+          return temp2;
+     }
      // If nu exista variabila ;)
      char error_message[100];
      sprintf(error_message, "[!] Variable %s was not declared", name);
@@ -346,8 +367,8 @@ int wasDefinedInCurrentScope(const char* name) {
                // Cautam scopeStack[i] in symbolTable
                {
                     for (int j = 0; j < symbolTableIndex; j++) {
-                         if(strcmp(symbolTable[j].name, scopeStack[i]) == 0) {
-                              if(symbolTable[j].scope == scope)
+                         if(strcmp(symbolTable[j].name, scopeStack[i]) == 0 ) {
+                              if(symbolTable[j].scope >= diffScope)
                                    return 1;
                          }
                     }
@@ -963,6 +984,46 @@ void unaryNegation(struct informations* finalExp, struct informations* leftExp)
      else if(strcmp(leftExp->type, "bool") == 0)
      {
           yyerror("[!]Illegal boolean operation");
+     }
+}
+struct symbol* lookUpElement(const char* name){
+     
+     struct symbol* temp = NULL;
+     for(int i=0; i < MAXSYMBOLS; i++) {
+          if(strcmp(globalStack[i], name) == 0)
+               { 
+                    for(int j=0; j < MAXSYMBOLS; j++){
+                         if(strcmp(symbolTable[j].name, name) == 0 && symbolTable[j].scope == 0)
+                              {temp = &symbolTable[j];
+                              return temp;}
+                     }
+               }
+          if(strcmp(globalStack[i], "-1") == 0)
+               break;
+     } 
+     for(int i=0; i < MAXSYMBOLS; i++) {
+          if(strcmp(scopeStack[i], name) == 0)
+               { 
+                    for(int j=0; j < MAXSYMBOLS; j++){
+                         if(strcmp(symbolTable[j].name, name) == 0 && symbolTable[j].scope >= diffScope)
+                              {temp = &symbolTable[j];
+                              return temp;}
+                     }
+               }
+          if(strcmp(scopeStack[i], "-1") == 0)
+               break;
+     }  
+     return NULL;
+     
+}
+void test(const char* name)
+{
+     struct symbol* temp = lookUpElement(name);
+     if(temp == NULL)
+          yyerror("[!]Variable not declared");
+     else
+     {
+          printf("Name: %s, Type: %s, Value: %d, Scope: %d\n", temp->name, temp->type, temp->intVal, temp->scope);
      }
 }
 void calculate(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp, int typeOfOperation)

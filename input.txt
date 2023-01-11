@@ -1,17 +1,21 @@
+
 int functie(){
     int ceva;
-    
+    int xd=5;
+    return ceva
 }
 
 begin_progr {
-    int drr;
-    if (drr > 2)
+    int xd=5;
+ 
+    if(xd>5)
     {
-      }
-    else{
-       
-        int ceva=drr;
+        int xd=7;
     }
+    int drr = xd;
+    const float dd=23.3;
     int afterIf;
+    
 }
+
 

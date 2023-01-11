@@ -15,6 +15,7 @@
 "while" {return WHILE;}
 "for" {return FOR;}
 "class" {return CLASS;}
+"return" {return RETURN;}
 "true"|"false" {yylval.boolVal=strdup(yytext); return BOOLEANVALUE;}
 "<" {return LESSTHAN;}
 "<=" {return LESSOREQUALTHAN;}
