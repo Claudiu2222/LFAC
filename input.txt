@@ -1,18 +1,21 @@
 
-int functie(){
-    int ceva;
-    int xd=5;
-    return ceva
+int cevad;
+bool var = true;
+float functie(int v1){
+    int ceva=30;
+    float xd=5.3;
+    return xd
 }
+
+
 
 begin_progr {
     int xd=5;
- 
     if(xd>5)
     {
-        int xd=7;
+        int xdd;
     }
-    int drr = xd;
+  
     const float dd=23.3;
     int afterIf;
     

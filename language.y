@@ -151,7 +151,7 @@ struct informations* getInformationFromTable(const char* name);
 
 %type<info>expresii
 %type<param>parametru
-
+%type<info>returnedvalue
 %start progr
 
 %left OR
@@ -178,7 +178,7 @@ rightbracket: RIGHTBRACKET {revertScope();}
             ;
 
 declaratie : declaratii_comune {printf("ies din declaratie\n");}
-           | TYPE ID {addFunctionToTable($1, $2, scope);} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET declaratii_functii RETURN returnedvalue rightbracket //function
+           | TYPE ID {addFunctionToTable($1, $2, scope);} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET declaratii_functii RETURN returnedvalue {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} } rightbracket //function
            | CLASS ID leftbracket declaratii_clasa rightbracket {printf(" %s \n", $2);}    
            ;
 declaratii_comune: TYPE ID ';' 
@@ -228,12 +228,12 @@ declaratie_functie: declaratii_comune
                   | if_statement
                   ; // add more
 
-returnedvalue: ID
-               | NUMBER 
-               | FLOAT
-               | BOOLEANVALUE
-               | STRING
-               | CHAR
+returnedvalue: ID { struct informations *temp = getInformationFromTable($1); $$=temp;}
+               | NUMBER {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;}
+               | FLOAT {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;}
+               | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;}
+               | STRING {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;}
+               | CHAR {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;}
                | ID '[' NUMBER ']' // array at index NUMBER
                ;
 
@@ -314,24 +314,6 @@ printInfo();
 // -- Functions --
 struct informations* getInformationFromTable(const char* name) {
   //   printf(" %s IN GETINFO ", name);
-     
-     /*
-     for (int i = 0; i < symbolTableIndex; i++) {
-          if(strcmp(symbolTable[i].name, name) == 0) {
-             //  printf(" %s IN GETINFO ", symbolTable[i].name);
-               
-               struct informations* temp = (struct informations*)malloc(sizeof(struct informations));
-               strcpy(temp->type, symbolTable[i].type);
-               temp->intVal = symbolTable[i].intVal;
-               temp->floatVal = symbolTable[i].floatValue;
-               temp->charVal = symbolTable[i].charValue;
-               if (symbolTable[i].stringValue != NULL) strcpy(temp->strVal, symbolTable[i].stringValue);
-               if (symbolTable[i].boolValue != NULL) strcpy(temp->boolVal, symbolTable[i].boolValue);
-               return temp;
-          }
-     }
-      
-     */
      
      struct symbol* temp = lookUpElement(name);
      struct informations* temp2 = (struct informations*)malloc(sizeof(struct informations));
