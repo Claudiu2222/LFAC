@@ -1,5 +1,7 @@
 %{
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 extern FILE* yyin;
 extern char* yytext;
 extern int yylineno;
@@ -43,9 +45,17 @@ extern int yylineno;
 extern int yylex();
 void yyerror(char * s);
 
+// Type const chars * 
+const char* _int = "int";
+const char* _float = "float";
+const char* _char = "char";
+const char* _string = "string";
+const char* _bool = "bool";
+
+
 struct informations{
      int intVal;
-     char boolVal[5];
+     char boolVal[6];
      char strVal[256];
      float floatVal;
      char charVal;
@@ -171,12 +181,12 @@ expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct i
           | expresii MINUS expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_MINUS); free($1);free($3); $$=temp;}
           | '(' expresii ')' {$$=$2;}
           | MINUS expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $2, NULL,OP_UNARYMINUS); free($2); $$=temp;}
-          | NUMBER {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->intVal=$1; strcpy(temp->type,"int"); $$=temp;} 
+          | NUMBER {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;} 
           | ID      {printf(" %s IN EXPR", $1);} 
-          | FLOAT  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->floatVal=$1; strcpy(temp->type,"float"); $$=temp;} 
-          | CHAR  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,"char"); $$=temp;} 
-          | STRING  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));printf("Acest compiler este retardat"); strcpy(temp->strVal,$1); strcpy(temp->type,"string"); $$=temp;} 
-          | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,"bool"); $$=temp;} 
+          | FLOAT  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;} 
+          | CHAR  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
+          | STRING  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));printf("Acest compiler este retardat"); strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
+          | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
           | ID '(' lista_argumente ')'        // PT FUNCTION CALL
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  {printf(" %s IN EXPR", $1);} // array at index NUMBER

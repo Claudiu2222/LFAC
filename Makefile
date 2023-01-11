@@ -1,7 +1,7 @@
 all: y.tab.o lex.yy.o
 	gcc y.tab.o lex.yy.o -o output;
 	rm -f lex.yy.c y.tab.c y.tab.h y.tab.o lex.yy.o;
-	clear;
+#	clear;
 
 y.tab.o: language.y 
 	yacc -d language.y
