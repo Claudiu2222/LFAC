@@ -28,13 +28,13 @@
 "-" {return MINUS;}
 "*" {return MULTIPLICATION;}
 "/" {return DIVISION;}
-EVAL {return EVAL;}
+EVAL {return EVAL;} 
 TYPEOF {return TYPEOF;}
 PRINT {return PRINT;}
 [_a-zA-Z][_a-zA-Z0-9]* {yylval.strVal = strdup(yytext); return ID;}
 ":=" {return ASSIGN;}
 \'.\' {yylval.charVal = yytext[1];return CHAR;}
-\".*\" {yylval.strVal = strdup(yytext); strcpy(yylval.strVal, yylval.strVal+1 ); yylval.strVal[strlen(yylval.strVal)-1]='\0';return STRING;}
+\".+\" {yylval.strVal = strdup(yytext); yylval.strVal=strtok(yylval.strVal,"\""); printf("====\n%s\n====",yylval.strVal);return STRING;}
 [1-9][0-9]*|0 {yylval.intVal = atoi(yytext); return NUMBER;}
 [1-9][0-9]*[.][0-9]+|0[.][0-9]+ {yylval.floatVal = atof(yytext);return FLOAT;}
 "{" {return LEFTBRACKET;}
