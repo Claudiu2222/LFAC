@@ -189,7 +189,7 @@ declaratii_comune: TYPE ID ';'
 
                  | TYPE '[' NUMBER ']' ID ';' // array
                  | TYPE '[' NUMBER ']' ID ASSIGN ID';' // array int[50] arra1 = array2;
-                 | ID ASSIGN expresii ';' { free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
+                 | ID ASSIGN expresii ';' { updateVariable($1, $3); free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
                  | ID '[' NUMBER ']' ASSIGN expresii ';' {free($6);}// array at index NUMBER = assignedValue
                  | CONSTANT TYPE ID ASSIGN expresii ';' {addVariableToTable($3, $2, scope, CCONSTANT , $5); free($5); }//variable // const id = 2 + 3;
                  ;
@@ -217,7 +217,7 @@ expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct i
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER
           | ID '.' ID   // class attribute
-          | ID      {printf("Mor aici\n"); struct informations *temp = getInformationFromTable($1); test($1); $$=temp;} 
+          | ID      {struct informations *temp = getInformationFromTable($1); test($1); $$=temp;} 
 
           ;
 //ifStatement
@@ -987,7 +987,7 @@ void unaryNegation(struct informations* finalExp, struct informations* leftExp)
      }
 }
 struct symbol* lookUpElement(const char* name){
-     
+     // Check daca este in global dupa in local stack
      struct symbol* temp = NULL;
      for(int i=0; i < MAXSYMBOLS; i++) {
           if(strcmp(globalStack[i], name) == 0)
@@ -1139,4 +1139,21 @@ void revertScope()
      } else {
           scope = scope - 1;
      }
+}
+
+void updateVariable(const char* name, strcut informations* info) {
+     struct symbol* temp = lookUpElement(name);
+
+     char error_message[100]; 
+     if(temp == NULL){
+          sprintf(error_message, "[!]Variable %s not declared  -> ", name);
+          yyerror(error_message);
+     }
+    
+     if(strcmp(temp->type, info->type) != 0) {
+          sprintf(error_message, "[!]Type mismatch for variable %s -> ", name);
+          yyerror(error_message);
+     }
+
+     
 }
