@@ -88,15 +88,18 @@ struct symbol{
 
 }symbolTable[MAXSYMBOLS];
 
-int scope=0;
-int scopeStack[MAXSYMBOLS];
-int stackIndex=0;
-int symbolTableIndex=0;
 
-int wasDefinedInCurrentScope(char* name);
+int scope = 0;
+int last_scope = -1;
+int diffScope = 0;
+char* scopeStack[MAXSYMBOLS];
+char* globalStack[MAXSYMBOLS];
+int symbolTableIndex = 0;
+
 void addParameterToFunction(struct symbol* functie, struct parameter* param);
 void addFunctionToTable(char* type, char *name,  int scope);
 void addVariableToTable(char *name, char* type, int scope, int isConstant, struct informations *info );
+void addVariableFromSymToTable(char *name, char* type, int scope, int isConstant, const char* symbol_name);
 void printInfo();
 void initializeStack();
 void pushScope();
@@ -107,7 +110,23 @@ void multiply(struct informations* finalExp, struct informations* leftExp, struc
 void divide(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp);
 void calculate(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp, int typeOfOperation);
 void verifyTypes(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp);
+void showStack();
+
+// Scope System
+void initGlobalStack();
+void initScopeStack();
+void pushGlobalStack(const char* name);
+void pushScopeStack();
+
+void changeScope();
+void revertScope();
+
+int wasDefinedInGlobalScope(const char* name);
+int wasDefinedInCurrentScope(const char* name);
+// ---- 
+struct informations* getInformationFromTable(const char* name);
 %}
+
 %union {
   char* strVal;
   int intVal;
@@ -121,12 +140,13 @@ void verifyTypes(struct informations* finalExp, struct informations* leftExp, st
 %token BEGIN_PR END_PR CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
 
 %token <strVal>TYPE
-%token <strVal>ID 
 %token <intVal>NUMBER
 %token <boolVal>BOOLEANVALUE
 %token <floatVal>FLOAT
 %token <charVal>CHAR
 %token <strVal>STRING
+
+%token <strVal>ID 
 
 %type<info>expresii
 %type<param>parametru
@@ -142,29 +162,35 @@ void verifyTypes(struct informations* finalExp, struct informations* leftExp, st
 
 
 %%
-progr: declaratii bloc {printf("program corect sintactic\n");}
+progr: declaratii bloc  {printf("program corect sintactic\n");}
      ;
  
-declaratii :  /*#epsilon#*/
-        | declaratie 
-	   | declaratii declaratie 
-	   ;
-leftbracket: LEFTBRACKET {pushScope();}
+declaratii : declaratii declaratie
+           | declaratie
+           | /*empty*/
            ;
-rightbracket: RIGHTBRACKET {popScope();}
+
+
+leftbracket: LEFTBRACKET {changeScope();}
+           ;
+rightbracket: RIGHTBRACKET {revertScope();}
             ;
-declaratie : declaratii_comune
-           | TYPE ID {addFunctionToTable($1, $2, scope);}'(' lista_parametri ')'  leftbracket declaratii_functii rightbracket //function
+
+declaratie : declaratii_comune {printf("ies din declaratie\n");}
+           | TYPE ID {addFunctionToTable($1, $2, scope);} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET declaratii_functii rightbracket //function
            | CLASS ID leftbracket declaratii_clasa rightbracket {printf(" %s \n", $2);}    
            ;
-declaratii_comune: TYPE ID ';' {addVariableToTable($2, $1, scope, NONCONSTANT , 0);}//variable
-                 | TYPE ID ASSIGN  expresii ';' {addVariableToTable($2, $1, scope, NONCONSTANT , $4); free($4); } //variable or array - assign
+declaratii_comune: TYPE ID ';' 
+                    {addVariableToTable($2, $1, scope, NONCONSTANT , 0);}//variable
+
+                 | TYPE ID ASSIGN  expresii ';' 
+                    {addVariableToTable($2, $1, scope, NONCONSTANT , $4); free($4);} //variable or array - assign
+
                  | TYPE '[' NUMBER ']' ID ';' // array
                  | TYPE '[' NUMBER ']' ID ASSIGN ID';' // array int[50] arra1 = array2;
                  | ID ASSIGN expresii ';' {free($3);} //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
                  | ID '[' NUMBER ']' ASSIGN expresii ';' {free($6);}// array at index NUMBER = assignedValue
-                 | CONSTANT TYPE ID ASSIGN expresii ';' {addVariableToTable($3, $2, scope, CCONSTANT , 0); printInfo();}//variable // const id = 2 + 3;
-                 | CONSTANT TYPE ID ASSIGN ID ';' { addVariableToTable($3, $2, scope, CCONSTANT , 0); printInfo();}//variable// const id = di;
+                 | CONSTANT TYPE ID ASSIGN expresii ';' {addVariableToTable($3, $2, scope, CCONSTANT , $5); free($5); }//variable // const id = 2 + 3;
                  ;
 
 expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_MULTIPLICATION); free($1); free($3); $$=temp;}
@@ -182,15 +208,15 @@ expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct i
           | '(' expresii ')' {$$=$2;}
           | MINUS expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $2, NULL,OP_UNARYMINUS); free($2); $$=temp;}
           | NUMBER {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;} 
-          | ID      {printf(" %s IN EXPR", $1);} 
           | FLOAT  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;} 
           | CHAR  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
-          | STRING  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));printf("Acest compiler este retardat"); strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
+          | STRING  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
           | ID '(' lista_argumente ')'        // PT FUNCTION CALL
           | ID '.' ID '(' lista_argumente ')'  //method call
-          | ID '[' NUMBER ']'  {printf(" %s IN EXPR", $1);} // array at index NUMBER
+          | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER
           | ID '.' ID   // class attribute
+          | ID      {struct informations *temp = (struct informations*)getInformationFromTable($1); $$=temp;} 
 
           ;
 //ifStatement
@@ -235,7 +261,7 @@ arg: ID
     | ID '.' ID
     ;
 /* bloc main */
-bloc : BEGIN_PR leftbracket list rightbracket END_PR  
+bloc : BEGIN_PR leftbracket list rightbracket  
      ;
      
 if_statement: IF '(' expresii ')' leftbracket declaratii_if rightbracket
@@ -269,38 +295,127 @@ exit(1);
 }
 
 int main(int argc, char** argv){
-initializeStack();
+initGlobalStack();
+initScopeStack();
 yyin=fopen(argv[1],"r");
 yyparse();
 printInfo();
 } 
 
 // -- Functions --
+struct informations* getInformationFromTable(const char* name) {
+     for(int i=0; i < MAXSYMBOLS; i++) {
+          if(strcmp(symbolTable[i].name, name) == 0)
+          {
+//               struct informations{
+//     int intVal;
+//     char boolVal[6];
+//     char strVal[256];
+//     float floatVal;
+//     char charVal;
+//     char type[10];
+//};
+//struct parameter{
+//     char name[50];
+//     struct informations info;
+//};
+//struct symbol{
+//     char name[50]; // 
+//     char type[30];     //
+//     int scope;    // 
+//     int isConstant; //
+//     int typeOfObject; //
+//     char charValue;
+//     int intVal;
+//     char* boolValue;
+//     float floatValue;
+//     char *stringValue;
+//     int *integerVector;
+//     char *characterVector;
+//	char **stringVector;
+//     int vectorSize;
+//     int isPrivate;
+//     
+//     struct parameter parameters[MAXPARAMETERS];
+//     int numberOfParameters;
+//
+//
+//}symbolTable[MAXSYMBOLS];
 
-int wasDefinedInCurrentScope(char* name){
+               struct informations *temp=(struct informations*)malloc(sizeof(struct informations));
+               temp->intVal = symbolTable[i].intVal;
+               strcpy(temp->boolVal, symbolTable[i].boolValue);
+               strcpy(temp->strVal, symbolTable[i].stringValue);
+               temp->floatVal = symbolTable[i].floatValue;
+               temp->charVal = symbolTable[i].charValue;
+               strcpy(temp->type, symbolTable[i].type);
 
-     for(int i=0; i <= stackIndex; i++){
-          for(int j=0; j < symbolTableIndex; j++) // nu-mi place ca verific toate simbolurile, sa le fi verificat doar pe cele de la 
-             {                                     //scopurile respective ar fi trb un hash table sau ceva pe langa ce avem ca sa aiba pt fiecare 
-                                                  // in care pt fiecare nivel sa am liste inlantuite pt scopul respecitv gen la hashTable[0] sa gasesc
-                                                  // toate simbolurile de la nivelul 0, la hashTable[1] toate simbolurile de la nivelul 1 etc
-                                                  // si sa le accesez cu hashTable[0]->next ( fiecare pointeaza la un struct symbol)
-                                                  //dar era mai mult spatiu necesar, plus ca sunt prea obosit sa mai implementez asta acum
-                                                  //asa ca voi sacrifica din performanta. E cam hard coded ce e mai jos
-               
-               if(strcmp(symbolTable[j].name, name) == 0 && symbolTable[j].scope == scopeStack[i])
-                    return 1;
-                    
-               if(symbolTable[j].typeOfObject == FUNCTION && symbolTable[j].scope==scope-1) //pt chestii inside functions
-                    for(int k=0; k < symbolTable[j].numberOfParameters; k++)
-                         if(strcmp(symbolTable[j].parameters[k].name, name) == 0)
-                              return 1;}
-     }
+               return temp;
+          }
+     } 
+     
+     // If nu exista variabila ;)
+     char error_message[100];
+     sprintf(error_message, "[!] Variable %s was not declared", name);
+     yyerror(error_message);
+     return NULL;
+}
+
+int wasDefinedInGlobalScope(const char* name){
+     for(int i=0; i < MAXSYMBOLS; i++) {
+          if(strcmp(globalStack[i], name) == 0)
+               return 1;
+          if(strcmp(globalStack[i], "-1") == 0)
+               return 0;
+     } 
      return 0;
 }
+
+int wasDefinedInCurrentScope(const char* name) {
+     for(int i=0; i < MAXSYMBOLS; i++) {
+          if(strcmp(scopeStack[i], name) == 0)
+               return 1;
+          if(strcmp(scopeStack[i], "-1") == 0)
+               return 0;
+     } 
+     return 0;
+}
+
 void addVariableToTable(char *name, char* type, int scope, int isConstant, struct informations *info ){
     
-     if(wasDefinedInCurrentScope(name) == 0){
+     // Print the symbol data
+     //printf("name : %s\n", name);
+     //printf("type : %s]\n", type);
+     //printf("scope : %d\n", scope);
+     //printf("isConstant : %d\n", isConstant);
+     //printf("info type : %s\n", info->type);
+     //printf("info boolVal: %s\n", info->boolVal);
+     //printf("info charVal: %s\n", info->charVal);
+     
+
+     // Verificam daca variabila nu se afla in unul din scope-urile parinte
+     char error_message[100];
+
+     if (scope == 0) {
+          if(wasDefinedInGlobalScope(name) == 1)
+          {
+               sprintf(error_message, "[!]Variable already defined in global scope : %s  -> ", name);
+               yyerror(error_message);
+          }
+     }
+ 
+     if (scope != 0) {
+          if(wasDefinedInCurrentScope(name) == 1){
+               sprintf(error_message, "[!]Variable already defined in current scope : %s  -> ", name);
+               yyerror(error_message);
+          }
+          else if (wasDefinedInGlobalScope(name) == 1){
+               sprintf(error_message, "[!]Variable already defined in global scope : %s  -> ", name);
+               yyerror(error_message);
+          }
+     }
+
+     // continuam cu adaugarea in tabela de simboluri
      strcpy(symbolTable[symbolTableIndex].name,name);
      strcpy(symbolTable[symbolTableIndex].type,type);
      symbolTable[symbolTableIndex].scope=scope;
@@ -310,7 +425,6 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
      {
           if(strcmp(info->type, type) != 0)
                yyerror("[!]Type mismatch");
-
           if(strcmp(info->type, "char") == 0)
           {
                symbolTable[symbolTableIndex].charValue=info->charVal;
@@ -319,7 +433,6 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
           {
                symbolTable[symbolTableIndex].boolValue = (char*)malloc(sizeof(char)*strlen(info->boolVal));
                strcpy(symbolTable[symbolTableIndex].boolValue,info->boolVal);
-              
           }
           else if(strcmp(info->type, "int") == 0)
           {
@@ -333,34 +446,76 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
           {
                symbolTable[symbolTableIndex].stringValue = (char*)malloc(sizeof(char)*strlen(info->strVal));
                strcpy(symbolTable[symbolTableIndex].stringValue,info->strVal);
-               
           }
+     } 
+     symbolTableIndex++;
+
+     if (scope == 0) {
+          pushGlobalStack(name);
+     } else {
+          pushScopeStack(name);
      }
-     symbolTableIndex++;}
-     else
-          yyerror("[!]ID already exists in current scope");
+
+          //printf("new simbol added to table\n===\n");
+          //// Print the symbol data
+          //printf("name : %s\n", symbolTable[symbolTableIndex-1].name);
+          //printf("type : %s\n", symbolTable[symbolTableIndex-1].type);
+          //printf("scope : %d\n", symbolTable[symbolTableIndex-1].scope);
+          //printf("isConstant : %d\n", symbolTable[symbolTableIndex-1].isConstant);
+          //printf("int value : %d\n", symbolTable[symbolTableIndex-1].intVal);
+          //printf("float value : %f\n", symbolTable[symbolTableIndex-1].floatValue);
+          //printf("char value : %s\n", symbolTable[symbolTableIndex-1].charValue);
+          //printf("bool value : %s\n", symbolTable[symbolTableIndex-1].boolValue);
+          //printf("string value : %s\n", symbolTable[symbolTableIndex-1].stringValue);
+
 }
 void addFunctionToTable( char* functionType, char *functionName, int scope){
      
-     if(wasDefinedInCurrentScope(functionName) == 0){
+     // Vefificam daca functia exista in global scope
+     char error_message[100];
+     if (scope == 0) {
+          if(wasDefinedInGlobalScope(functionName) == 1)
+          {
+               sprintf(error_message, "[!]Function already defined in global scope : %s  -> ", functionName);
+               yyerror(error_message);
+          }
+     }
      strcpy(symbolTable[symbolTableIndex].name, functionName);
      strcpy(symbolTable[symbolTableIndex].type, functionType);
      symbolTable[symbolTableIndex].scope=scope;
      symbolTable[symbolTableIndex].typeOfObject=FUNCTION;
      symbolTable[symbolTableIndex].numberOfParameters=0;
-     symbolTableIndex++;}
-     else
-          yyerror("[!]ID already exists in current scope");
-     
+     symbolTableIndex++;
+     pushGlobalStack(functionName); // pana cand doar in global scope
 }
+
+// !INFO: La moment doar adaug parametrul in stacul local, dar ei nu sunt salvati nicaieri
 void addParameterToFunction(struct symbol *functie, struct parameter* param){
 
+     //Verificam daca numele parametrului nu este deja folosit
+     char error_message[100];
+     if (wasDefinedInCurrentScope(param->name) == 1){
+          sprintf(error_message, "[!]Parameter already defined in current scope : %s  -> ", param->name);
+          free(param);
+          yyerror(error_message);
+     }
+     else if (wasDefinedInGlobalScope(param->name) == 1){
+          sprintf(error_message, "[!]Parameter already defined in global scope : %s  -> ", param->name);
+          free(param);
+          yyerror(error_message);
+     }
+
      if(functie->numberOfParameters > MAXPARAMETERS)
-          {    free(param);
-               yyerror("[!]Parameter limit exceeded");}
+     {    
+          free(param);
+          yyerror("[!]Parameter limit exceeded");
+     }
+
      strcpy(functie->parameters[functie->numberOfParameters].name, param->name);
      strcpy(functie->parameters[functie->numberOfParameters].info.type, param->info.type);
      functie->numberOfParameters++;
+
+     pushScopeStack(param->name);
      free(param);
 }
 void printInfo()
@@ -410,26 +565,6 @@ void printInfo()
      }
 }
 
-
-void initializeStack(){
-     int i;
-     for(i=0; i < MAXSYMBOLS; i++){
-          scopeStack[i] = -1;
-     }
-     scopeStack[GLOBAL] = 0;
-}
-void pushScope(){
-     stackIndex++;
-     scope++;
-     if(stackIndex >= MAXSYMBOLS)
-          yyerror("[!]Stack overflow");
-     scopeStack[stackIndex] = scope;
-}
-void popScope(){
-     scopeStack[stackIndex] = -1;
-     stackIndex--;
-     
-}
 
 void add(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
 {
@@ -894,3 +1029,66 @@ void calculate(struct informations* finalExp, struct informations* leftExp, stru
      
 }
 
+void initGlobalStack(){
+     int i;
+     for(i=0; i<MAXSYMBOLS; i++){
+          globalStack[i] = (char*)malloc(50*sizeof(char));
+          strcpy(globalStack[i], "-1");
+     }
+}
+
+void pushGlobalStack(const char* name){
+     int i;
+     for(i=0; i<MAXSYMBOLS; i++){
+          if(strcmp(globalStack[i], "-1") == 0){
+               strcpy(globalStack[i], name);
+               break;
+          }
+     }
+}
+
+void initScopeStack(){
+     if (scopeStack[0] == NULL){
+          int i;
+          for(i=0; i<MAXSYMBOLS; i++){
+               scopeStack[i] = (char*)malloc(50*sizeof(char));
+               strcpy(scopeStack[i], "-1");
+          }
+     } else {
+          for (int i=0; i<MAXSYMBOLS; i++){
+               strcpy(scopeStack[i], "-1");
+          }
+     }
+}
+
+void pushScopeStack(const char* name){
+     int i;
+     for(i=0; i<MAXSYMBOLS; i++){
+          if(strcmp(scopeStack[i], "-1") == 0){
+               strcpy(scopeStack[i], name);
+               break;
+          }
+     }
+}
+
+void changeScope() 
+{
+     if (scope == 0) {
+          scope = last_scope + 2;
+          diffScope = scope;
+     } else {
+          scope = scope + 1;
+     }
+}
+
+void revertScope()
+{
+     if (scope - diffScope == 0) {
+          last_scope = scope;
+          diffScope = 0;
+          scope = 0;
+          initScopeStack();
+     } else {
+          scope = scope - 1;
+     }
+}

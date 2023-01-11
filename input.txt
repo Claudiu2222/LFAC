@@ -1,11 +1,7 @@
-bool x:= true;
-int xd:=23* 10 - 23 -7*2;
-string we := "sunt capra";
-begin_progr
-{
+int a := 2;
+int b := a;
 
-int xdd;
-int cevatip;
-int functieType;
+begin_progr {
+    int test4 := 2;
+    int test5 := 2;
 }
-end_progr
