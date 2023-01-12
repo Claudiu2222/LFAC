@@ -27,6 +27,7 @@ extern int yylineno;
 #define OBJECT 5
 #define ARRAY 6
 
+
 #define OP_OR 1
 #define OP_AND 2 
 #define OP_LESSTHAN 3
@@ -74,6 +75,25 @@ struct parameter{
      struct information info;
 };
 
+struct objval {
+     char name[50];      // 
+     char type[30];      // 
+     int isConstant;     //
+
+     char charValue;
+     int intVal;
+     char** boolValue;
+     float floatValue;
+     char *stringValue;
+     int *integerVector;
+     char *characterVector;
+	char **stringVector;
+     int vectorSize;
+     
+     struct parameter parameters[MAXPARAMETERS];
+     int numberOfParameters;
+};
+
 
 
 struct symbol{
@@ -99,6 +119,9 @@ struct symbol{
      
      struct parameter parameters[MAXPARAMETERS];
      int numberOfParameters;
+
+     struct objval objValues[MAXSYMBOLS];
+     int numberOfObjValues;
 
 
 }symbolTable[MAXSYMBOLS];
@@ -143,6 +166,7 @@ void calculate(struct information* finalExp, struct information* leftExp, struct
 void verifyTypes(struct information* finalExp, struct information* leftExp, struct information* rightExp);
 void showStack();
 void updateVariable(const char* name, struct information* info);
+void updateVariableToInstance(const char* name, const char* className, struct information* info);
 struct symbol* lookUpElement(const char* name);
 int returnTypeOfObject(const char* name);
 void addClass(const char* name);
@@ -162,6 +186,7 @@ int wasDefinedInCurrentScope(const char* name);
 // ---- 
 struct information* getInformationFromTable(const char* name);
 void addInstanceToTable(const char* name, const char* className);
+struct information* getInformationFromInstance(const char* name, const char* prop);
 %}
 
 %union {
@@ -229,6 +254,7 @@ class_dec : ACCESSMODIFIER TYPE ID ';' {strcpy(accesModifier, $1); addVariableTo
           | ACCESSMODIFIER TYPE '[' NUMBER ']' ID ';' // array
           | ACCESSMODIFIER TYPE ID '[' NUMBER ']' ASSIGN expresii ';' {free($8);}// array at index NUMBER = assignedValue
           | ACCESSMODIFIER CONSTANT TYPE ID ASSIGN expresii ';' {strcpy(accesModifier, $1); addVariableToTable($4, $3, scope, CCONSTANT , $6); free($6);}
+          | ACCESSMODIFIER TYPE ID '(' lista_parametri ')' leftbracket list RETURN returnedvalue NEGATION rightbracket 
           ;
 
 declaratii_comune: TYPE ID ';' 
@@ -240,6 +266,7 @@ declaratii_comune: TYPE ID ';'
                  | TYPE '[' NUMBER ']' ID ';' {addArrayToTable($1, $3, $5, scope);} // array
                  | ID ASSIGN expresii ';' { updateVariable($1, $3);  free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
                  | ID '[' NUMBER ']' ASSIGN expresii ';' { updateArrayValue($1, $3, $6); free($6);}// array at index NUMBER = assignedValue
+                 | ID '.' ID ASSIGN expresii ';' {updateVariableToInstance($3, $1, $5); free($5);}
                  | CONSTANT TYPE ID ASSIGN expresii ';' {addVariableToTable($3, $2, scope, CCONSTANT , $5); free($5); }//variable // const id = 2 + 3;
                  | ID INSTANCEOF ID ';' {addInstanceToTable($1, $3);} // obj => Foo;
                  ;
@@ -263,6 +290,7 @@ expresii:  expresii MULTIPLICATION expresii {struct information *temp=(struct in
           | CHAR  {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
           | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
+          | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
           | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  {struct information *temp= arrayValueAtIndex($1, $3); $$=temp;} // array at index NUMBER 
@@ -363,6 +391,36 @@ struct information* getInformationFromTable(const char* name) {
      
      
      sprintf(error_message, "[!] Variable %s was not declared", name);
+     yyerror(error_message);
+     return NULL;
+}
+
+struct information* getInformationFromInstance(const char* name, const char* prop) {
+          
+     // Search for the instance 
+     struct symbol* temp = lookUpElement(name);
+
+
+     if (temp != NULL) {
+          // Cautam in objvals 
+          for (int i = 0; i < temp->numberOfObjValues; i++) {
+               if (strcmp(temp->objValues[i].name, prop) == 0) {
+                    struct information* temp2 = (struct information*)malloc(sizeof(struct information));
+                    strcpy(temp2->type, temp->objValues[i].type);
+                    temp2->intVal = temp->objValues[i].intVal;
+                    temp2->floatVal = temp->objValues[i].floatValue;
+                    temp2->charVal = temp->objValues[i].charValue;
+                    if (temp->objValues[i].stringValue != NULL) strcpy(temp2->strVal, temp->objValues[i].stringValue);
+                    if (temp->objValues[i].boolValue != NULL) strcpy(temp2->boolVal, temp->objValues[i].boolValue);
+                    return temp2;
+               }
+          }
+     }
+
+
+     // If nu exista variabila ;)
+     char error_message[100];
+     sprintf(error_message, "[!] Variable [%s] is not declared or is not public for [%s]", prop, name);
      yyerror(error_message);
      return NULL;
 }
@@ -1539,6 +1597,50 @@ void updateVariable(const char* name, struct information* info) {
                strcpy(temp->boolValue, info->boolVal);}
 }
 
+void updateVariableToInstance(const char* name, const char* objName, struct information* info) {
+     struct symbol* temp = lookUpElement(objName);
+
+     char error_message[100]; 
+     if(temp == NULL){
+          sprintf(error_message, "[!] Object [%s] does not exist! -> ", objName);
+          yyerror(error_message);
+     }
+     
+     // Iteram prin lista de atribute si cautam numele variabilei
+     for (int i = 0; i < temp->numberOfObjValues; i++)
+     {
+          if (strcmp(temp->objValues[i].name, name) == 0)
+          {
+               if (temp->objValues[i].isConstant == 1) {
+                    sprintf(error_message, "[!]Variable [%s] for [%s] is constant -> ", name, objName);
+                    yyerror(error_message);
+               }
+               if (strcmp(temp->objValues[i].type, info->type) != 0)
+               {
+                    sprintf(error_message, "[!]Type mismatch for variable [%s] of [%s] -> ", name, objName);
+                    yyerror(error_message);
+               }
+
+               temp->objValues[i].intVal = info->intVal;
+               temp->objValues[i].floatValue = info->floatVal;
+               temp->objValues[i].charValue = info->charVal;
+               if (info->strVal != NULL)
+               {    if(temp->objValues[i].stringValue == NULL)
+                         temp->objValues[i].stringValue = (char*)malloc(256*sizeof(char));
+                    strcpy(temp->objValues[i].stringValue, info->strVal);}
+               if (info->boolVal != NULL) 
+               {    if(temp->objValues[i].boolValue == NULL)
+                         temp->objValues[i].boolValue = (char*)malloc(7*sizeof(char));
+                    strcpy(temp->objValues[i].boolValue, info->boolVal);}
+               return;
+          }
+     }
+
+     sprintf(error_message, "[!]Variable [%s] for [%s] does not exist or is not accesible -> ", name, objName);
+     yyerror(error_message);
+     
+}
+
 void addClass(const char* name)
 {
      // Cautam daca numele a fost folosi pe global deja 
@@ -1565,6 +1667,52 @@ void addInstanceToTable(const char* name, const char* className) {
           yyerror(error_message);
      }
 
-     // 2. Daca exista, continuam prin a adauga in .values, variabilele din clasa
+     // 2. Add instance to symbol table
+     strcpy(symbolTable[symbolTableIndex].name, name);
+     strcpy(symbolTable[symbolTableIndex].type, "instance");
+     strcpy(symbolTable[symbolTableIndex].parrentClass, className);
+     symbolTable[symbolTableIndex].scope=scope;
+     symbolTable[symbolTableIndex].typeOfObject=OBJECT;
+     symbolTable[symbolTableIndex].numberOfObjValues=0;
      
+
+     // 2. Daca exista, continuam prin a adauga in .values, variabilele din clasa
+     for (int i = 0; i < symbolTableIndex; i++) {
+
+          // Daca gasim un symbol care are parrentClass = className il adaugma in obbjvals
+          if (strcmp(symbolTable[i].parrentClass, className) == 0) {
+               
+               if (symbolTable[i].accessModifier != PUBLIC) continue;
+
+               // Copiem struct symbol in struct objValues
+               strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].name, symbolTable[i].name);
+               strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].type, symbolTable[i].type);
+               symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].isConstant = symbolTable[i].isConstant;
+               symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].charValue = symbolTable[i].charValue;
+               symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].intVal = symbolTable[i].intVal;
+               symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].floatValue = symbolTable[i].floatValue;
+
+               if (symbolTable[i].stringValue != NULL) {
+                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].stringValue = (char*)malloc(256*sizeof(char));
+                    strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].stringValue, symbolTable[i].stringValue);
+               }
+
+               if (symbolTable[i].boolValue != NULL) {
+                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].boolValue = (char*)malloc(7*sizeof(char));
+                    strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].boolValue, symbolTable[i].boolValue);
+               }
+
+               symbolTable[symbolTableIndex].numberOfObjValues++;
+          }
+     }
+
+     // Incrementam indexul
+     symbolTableIndex++;
+
+     // Adaugam in scope
+     if (scope == 0) {
+          pushGlobalStack(name);
+     } else {
+          pushScopeStack(name);
+     }
 }
