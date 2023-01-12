@@ -1,26 +1,27 @@
-class Foo {
-    public  const int bb = 3;
-    private int x = 2;
-    public  int y;
-    
-}
 
+    
 int functiaVietii()
 {
-    int bine=20;
-    
+   
+    int k;
     return 2!
 }
+
 int badas(int okkey){
-    int suntProst;
-    okkey = 30;
-    return suntProst!
+   
+  
+    okkey=20;
+
+    return okkey!
 }
 begin_progr{
-    obj => Foo;
+  
+    int okkey;
     int wassabi; 
     int da;
+    int cvv;
+    int altlaetl;
     int bine=20;
-  int cv =badas(functiaVietii());
+    int cv =badas(bine);
 }
 

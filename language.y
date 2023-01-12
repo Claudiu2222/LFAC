@@ -231,7 +231,7 @@ declaratii_comune: TYPE ID ';'
                     {addVariableToTable($2, $1, scope, NONCONSTANT , $4); free($4); } //variable or array - assign
 
                  | TYPE '[' NUMBER ']' ID ';' // array
-                 | ID ASSIGN expresii ';' { updateVariable($1, $3); free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
+                 | ID ASSIGN expresii ';' { updateVariable($1, $3);  free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
                  | ID '[' NUMBER ']' ASSIGN expresii ';' {free($6);}// array at index NUMBER = assignedValue
                  | CONSTANT TYPE ID ASSIGN expresii ';' {addVariableToTable($3, $2, scope, CCONSTANT , $5); free($5); }//variable // const id = 2 + 3;
                  | ID INSTANCEOF ID ';' {addInstanceToTable($1, $3);} // obj => Foo;
@@ -256,7 +256,7 @@ expresii:  expresii MULTIPLICATION expresii {struct information *temp=(struct in
           | CHAR  {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
           | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
-          | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex != calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
+          | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex-1 < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER 
           | ID      {struct information *temp = getInformationFromTable($1); test($1); $$=temp;} 
@@ -291,7 +291,7 @@ arg: ID {if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a function,
     | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); verifyArgument(temp, LITERAL, NULL); free(temp);} 
     | STRING {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->strVal,$1); strcpy(temp->type,_string); verifyArgument(temp, LITERAL, NULL); free(temp);}
     | CHAR {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); verifyArgument(temp, LITERAL, NULL); free(temp);} 
-    | ID {if(returnTypeOfObject($1) == VARIABLE){yyerror("[!] This is a variable, not a function");} struct information *temp = getInformationFromTable($1); verifyArgument(temp, FUNCTION, $1); free(temp);}'(' lista_argumente ')' { if(currentParameterIndex != calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); }  // segmentation fault pt apeluri de functii ca argument.. Nu stiu dc is prea obosit sa mai verific . EDIT: SEG FAULT PT ORICE ARGUMENT CE NU A FOST DECLARAT BEFORE (si variabile si functii)
+    | ID {if(returnTypeOfObject($1) == VARIABLE){yyerror("[!] This is a variable, not a function");} struct information *temp = getInformationFromTable($1); verifyArgument(temp, FUNCTION, $1); free(temp);}'(' lista_argumente ')' { struct information *temp=getInformationFromTable($1); }  // segmentation fault pt apeluri de functii ca argument.. Nu stiu dc is prea obosit sa mai verific . EDIT: SEG FAULT PT ORICE ARGUMENT CE NU A FOST DECLARAT BEFORE (si variabile si functii)
     | ID '.' ID '(' lista_argumente ')' // todo when classes are done
     | ID '[' NUMBER ']' // todo when arrays are done
     | ID '.' ID // todo when classes are done
@@ -535,11 +535,11 @@ void addParameterToFunction(struct symbol *functie, struct parameter* param){
           free(param);
           yyerror(error_message);
      }
-     else if (wasDefinedInGlobalScope(param->name) == 1){
+     /* else if (wasDefinedInGlobalScope(param->name) == 1){
           sprintf(error_message, "[!]Parameter already defined in global scope : %s  -> ", param->name);
           free(param);
           yyerror(error_message);
-     }
+     } */
 
      if(functie->numberOfParameters > MAXPARAMETERS)
      {    
@@ -1076,9 +1076,9 @@ struct symbol* lookUpElement(const char* name){
      // Check daca este in global dupa in local stack
      struct symbol* temp = NULL;
      if(inFunction == 1){
-          for(int i=0; i < symbolTable[currentFunctionIndex]->numberOfParameters; i++)
+          for(int i=0; i < symbolTable[currentFunctionIndex].numberOfParameters; i++)
           {
-               if(strcmp(symbolTable[currentFunctionIndex]->parameters[i].name, name) == 0)
+               if(strcmp(symbolTable[currentFunctionIndex].parameters[i].name, name) == 0)
                     {temp = &symbolTable[currentFunctionIndex];
                     return temp;}
           }
@@ -1110,6 +1110,32 @@ struct symbol* lookUpElement(const char* name){
      }  
      return NULL;
      
+}
+void updateParameterValue(struct information* info, int typeOfArgument)
+{
+     if(typeOfArgument == LITERAL)
+     {
+          if(strcmp(info->type,"int")==0)
+          {
+               calledFunction->parameters[currentParameterIndex-1].info.intVal = info->intVal;
+          }
+          else if(strcmp(info->type,"char")==0)
+          {
+              calledFunction->parameters[currentParameterIndex-1].info.charVal = info->charVal;
+          }
+          else if(strcmp(info->type,"float")==0)
+          {
+               calledFunction->parameters[currentParameterIndex-1].info.floatVal = info->floatVal;
+          }
+          else if(strcmp(info->type,"string")==0)
+          {
+               strcpy(calledFunction->parameters[currentParameterIndex-1].info.strVal, info->strVal);
+          }
+          else if(strcmp(info->type,"bool")==0)
+          {
+               strcpy(calledFunction->parameters[currentParameterIndex-1].info.boolVal, info->boolVal);
+          }
+     }    
 }
 void verifyArgument(struct information* argument, int typeOfArgument, char* name){
 
@@ -1145,6 +1171,10 @@ void verifyArgument(struct information* argument, int typeOfArgument, char* name
           }
      else{
           printf("Argument [%d] is ok\n", currentParameterIndex-1);
+          if(strcmp(argument->type, "int") == 0)
+              {
+               calledFunction->parameters[currentParameterIndex++].info.intVal = argument->intVal;
+              }
      }
 }
 
