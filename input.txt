@@ -1,16 +1,20 @@
-class Foo {
-    private int da = 2;
-    public int tes = 3;
-
-    public int getDa(int b) {
-        int buna = 2;
-        return 2!
-    }
+int ceva(int ok){
+    int bro;int x;
+    return bro!
+    
 }
+int functie(){
+    int kkk;
+    return 2!
+}
+int x;
 
 begin_progr {
-    obj => Foo;
-    int x = obj.tes;
-    int y = obj.getDa(2);
+
+    float nai;
+    float nai2;
+    int b;
+    int[99] d;
+    int cv=ceva(functie());
 }
 
