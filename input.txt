@@ -2,7 +2,7 @@ class Foo {
     private int da = 2;
     public int tes = 3;
 
-    public int getDa() {
+    public int getDa(int test, int k) {
         int buna = 2;
         return 2!
     }

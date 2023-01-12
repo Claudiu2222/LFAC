@@ -259,7 +259,7 @@ class_dec : ACCESSMODIFIER TYPE ID ';' {strcpy(accesModifier, $1); addVariableTo
           | ACCESSMODIFIER TYPE ID '[' NUMBER ']' ASSIGN expresii ';' {free($8);}// array at index NUMBER = assignedValue
           | ACCESSMODIFIER CONSTANT TYPE ID ASSIGN expresii ';' {strcpy(accesModifier, $1); addVariableToTable($4, $3, scope, CCONSTANT , $6); free($6);}
           //| ACCESSMODIFIER TYPE ID '(' lista_parametri ')' leftbracket list RETURN returnedvalue NEGATION rightbracket {addFunctionToTable($2, $3, scope); strcpy(currentFunction, $3); currentFunctionIndex=symbolTableIndex-1; inFunction=0;} //function
-          | ACCESSMODIFIER TYPE ID {inFunction=1; addFunctionToTable($2, $3, scope); strcpy(currentFunction, $3); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($12->type,$2)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($3,$12); free($12);inFunction=0;} rightbracket //function
+          | ACCESSMODIFIER TYPE ID {inFunction=1; strcpy(accesModifier, $1); addFunctionToTable($2, $3, scope); strcpy(currentFunction, $3); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($12->type,$2)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($3,$12); free($12);inFunction=0;} rightbracket //function
           ;
 
 declaratii_comune: TYPE ID ';' 
@@ -1751,6 +1751,63 @@ void addInstanceToTable(const char* name, const char* className) {
                     symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].boolValue = (char*)malloc(7*sizeof(char));
                     strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].boolValue, symbolTable[i].boolValue);
                }
+
+
+
+               /*
+                    struct objval {
+     char name[50];      // 
+     char type[30];      // 
+     int isConstant;     //
+
+     char charValue;
+     int intVal;
+     char** boolValue;
+     float floatValue;
+     char *stringValue;
+     int *integerVector;
+     char *characterVector;
+	char **stringVector;
+     int vectorSize;
+     
+     struct parameter parameters[MAXPARAMETERS];
+     int numberOfParameters;
+};
+
+
+
+struct symbol{
+     char name[50]; // 
+     char type[30];     //
+     int scope;    // 
+     int isConstant; //
+     int typeOfObject; // 1 var, 2 functie, 3 clasa, 4 membru de clasa, 5 array
+     char parrentClass[50];
+     int accessModifier;
+     char charValue;
+     int intVal;
+     char* boolValue;
+     float floatValue;
+     char *stringValue;
+     
+     int *integerVector;
+     char *characterVector;
+	char **stringVector;
+     float *floatVector;
+     char **booleanVector;
+     int vectorSize;
+     
+     struct parameter parameters[MAXPARAMETERS];
+     int numberOfParameters;
+
+     struct objval objValues[MAXSYMBOLS];
+     int numberOfObjValues;
+
+
+}symbolTable[MAXSYMBOLS];
+               */
+
+
 
                symbolTable[symbolTableIndex].numberOfObjValues++;
           }
