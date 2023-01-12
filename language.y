@@ -219,7 +219,7 @@ void addFunctionToInstantce(const char* name, const char* instance);
 %type<info>expresii
 %type<param>parametru
 %type<info>returnedvalue
-
+%type<info>arg
 %start progr
 
 %left OR
@@ -322,11 +322,37 @@ lista_parametri : /*epsilon*/
 parametru : TYPE ID {struct parameter* temp = (struct parameter*)malloc(sizeof(struct parameter)); strcpy(temp->name,$2); strcpy(temp->info.type,$1); $$=temp;}
           ;            
 
-lista_argumente: /*epsilon*/ 
-               | lista_argumente ',' arg 
-               | arg
+lista_argumente: /*epsilon*/ {if(currentParameterIndex < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}};
+               | lista_argumente ',' arg {currentParameterIndex++; if(currentParameterIndex > calledFunction->numberOfParameters){yyerror("[!] Too many parameters");} if(strcmp(calledFunction->parameters[currentParameterIndex-1].info.type, $3->type) != 0){yyerror("[!] Wrong type of parameter");}}
+               | arg {currentParameterIndex++; if(currentParameterIndex > calledFunction->numberOfParameters){yyerror("[!] Too many parameters");} if(strcmp(calledFunction->parameters[currentParameterIndex-1].info.type, $1->type) != 0){yyerror("[!] Wrong type of parameter");}}
                ;
-arg:  ID {verifyIfSymbolNameIsAVariable($1); if(currentParameterIndex  >= calledFunction->numberOfParameters){yyerror("[!] Too many arguments");}; struct information *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1);currentParameterIndex++; free(temp); } // aici se face un verify sa nu am prea putine argumente, pt fiecare argument se verifica in verifyArgument daca coincide sau nu cu tipul parametrului cu care corespunde. Vezi functia verifyArgument 
+arg:      arg MULTIPLICATION arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_MULTIPLICATION); free($1); free($3); $$=temp;}
+          | arg DIVISION arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_DIVISION); free($1); free($3); $$=temp;}
+          | arg AND arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_AND); free($1);free($3); $$=temp;}
+          | arg OR arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_OR); free($1);free($3); $$=temp;}
+          | arg LESSTHAN arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_LESSTHAN); free($1);free($3); $$=temp;}
+          | arg LESSOREQUALTHAN arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_LESSOREQUALTHAN); free($1);free($3); $$=temp;}
+          | arg GREATERTHAN arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_GREATERTHAN); free($1);free($3); $$=temp;}
+          | arg GREATEROREQUALTHAN arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_GREATEROREQUALTHAN); free($1);free($3); $$=temp;}
+          | arg EQUAL arg {struct information *temp=(struct information*)malloc(sizeof(struct information));calculate(temp, $1, $3, OP_EQUAL); free($1);free($3); $$=temp;}
+          | NEGATION arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $2, NULL, OP_NEGATION); free($2); $$=temp;}
+          | arg PLUS arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_PLUS); free($1);free($3); $$=temp;}
+          | arg MINUS arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_MINUS); free($1);free($3); $$=temp;}
+          | '(' arg ')' {$$=$2;}
+          | MINUS arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $2, NULL,OP_UNARYMINUS); free($2); $$=temp;}
+          | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;} 
+          | FLOAT  {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;} 
+          | CHAR  {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
+          | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
+          | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
+          | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
+          | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
+          | ID '.' ID '(' lista_argumente ')'  //method call
+          | ID '[' NUMBER ']'  {struct information *temp= arrayValueAtIndex($1, $3); $$=temp;} // array at index NUMBER 
+          | ID      {verifyIfSymbolNameIsAVariable($1); struct information *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1); $$=temp;} 
+          ;
+
+     /* ID {verifyIfSymbolNameIsAVariable($1); if(currentParameterIndex  >= calledFunction->numberOfParameters){yyerror("[!] Too many arguments");}; struct information *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1);currentParameterIndex++; free(temp); } // aici se face un verify sa nu am prea putine argumente, pt fiecare argument se verifica in verifyArgument daca coincide sau nu cu tipul parametrului cu care corespunde. Vezi functia verifyArgument 
     | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);} 
     | FLOAT {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);} 
     | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);} 
@@ -337,7 +363,7 @@ arg:  ID {verifyIfSymbolNameIsAVariable($1); if(currentParameterIndex  >= called
     | ID '[' NUMBER ']' { struct information *temp = getInformationFromTable($1); verifyArgument(temp, ARRAY, $1);currentParameterIndex++;}// todo when arrays are done
     | ID '.' ID // todo when classes are done
     
-    ;
+    ; */
 
 /* bloc main */
 bloc : BEGIN_PR leftbracket list rightbracket  
