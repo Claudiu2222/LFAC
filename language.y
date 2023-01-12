@@ -99,6 +99,10 @@ int inFunction;
 char currentFunction[50];
 int currentFunctionIndex;
 
+int currentParameterIndex;
+struct symbol* calledFunction;
+void verifyParameter(struct information* parameter);
+
 int inControlStatement = 0;
 
 void addParameterToFunction(struct symbol* functie, struct parameter* param);
@@ -143,6 +147,7 @@ struct informations* getInformationFromTable(const char* name);
 
   struct informations *info;
   struct parameter *param;
+
 }
 %token BEGIN_PR END_PR ELIF RETURN CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
 
@@ -154,10 +159,10 @@ struct informations* getInformationFromTable(const char* name);
 %token <strVal>STRING
 
 %token <strVal>ID 
-%nonassoc IF2
 %type<info>expresii
 %type<param>parametru
 %type<info>returnedvalue
+
 %start progr
 
 %left OR
@@ -184,9 +189,10 @@ rightbracket: RIGHTBRACKET {revertScope();}
             ;
 
 declaratie : declaratii_comune {printf("ies din declaratie\n");}
-           | TYPE ID {addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex--;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET declaratii_functii RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);} rightbracket //function
-           | CLASS ID leftbracket declaratii_clasa rightbracket {printf(" %s \n", $2);}    
+           | TYPE ID {addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex--;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);} rightbracket //function
+           | CLASS ID leftbracket list rightbracket {printf(" %s \n", $2);}    
            ;
+
 declaratii_comune: TYPE ID ';' 
                     {addVariableToTable($2, $1, scope, NONCONSTANT , 0);}//variable
 
@@ -218,20 +224,14 @@ expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct i
           | CHAR  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
           | STRING  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
-          | ID '(' lista_argumente ')'        // PT FUNCTION CALL
+          | ID '(' lista_argumente ')'   {currentParameterIndex=0; calledFunction=lookUpElement($1); if(currentFunction == NULL){yyerror("[!] Function does not exist");} }    // PT FUNCTION CALL
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER
           | ID '.' ID   // class attribute
           | ID      {struct informations *temp = getInformationFromTable($1); test($1); $$=temp;} 
 
           ;
-//ifStatement
-declaratii_functii: declaratii_functii declaratie_functie 
-                  | declaratie_functie 
-                  ;
-declaratie_functie: declaratii_comune
-                  | if_statement
-                  ; // add more
+
 
 returnedvalue: ID { struct informations *temp = getInformationFromTable($1); $$=temp;}
                | NUMBER {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;}
@@ -248,22 +248,13 @@ lista_parametri : /*epsilon*/
             ;
 parametru : TYPE ID {struct parameter* temp = (struct parameter*)malloc(sizeof(struct parameter)); strcpy(temp->name,$2); strcpy(temp->info.type,$1); $$=temp;}
           ;            
-declaratii_clasa : 
-               | declaratii_clasa declaratie_clasa
-               | declaratie_clasa
-               ;
-declaratie_clasa : declaratii_comune
-                 | TYPE ID '(' lista_argumente ')' ';' //function call
-                
-                 // add more
-                 ;
 
-lista_argumente: /*epsilon*/
+lista_argumente: /*epsilon*/ {if(currentParameterIndex != calledFunction->numberOfParameters){yyerror("[!] Wrong number of parameters");}}
                | lista_argumente ',' arg 
                | arg
                ;
-arg: ID
-    | NUMBER
+arg: ID {struct informations *temp = getInformationFromTable($1); /* verifyParameter(temp);*/ free(temp); }
+    | NUMBER //{}
     | FLOAT
     | BOOLEANVALUE
     | STRING
@@ -344,6 +335,8 @@ int wasDefinedInGlobalScope(const char* name){
      return 0;
 }
 
+
+     
 int wasDefinedInCurrentScope(const char* name) {
      
      for(int i=0; i < MAXSYMBOLS; i++) {
@@ -1031,6 +1024,15 @@ struct symbol* lookUpElement(const char* name){
      return NULL;
      
 }
+/* void verifyParameter(struct information* parameter){
+     char error_message[100];
+     for(int i = 0; i <= calledFunction->numberOfParameters; i++)
+     {
+          if(strcmp(parameter->type, calledFunction->parameters[i].type) != 0)
+               {// sprintf(error_message, "[!]Argument %s not declared  -> ", name);
+                  //  yyerror(error_message);}
+     }   
+} */
 void test(const char* name)
 {
      struct symbol* temp = lookUpElement(name);
@@ -1167,6 +1169,10 @@ void updateVariable(const char* name, struct informations* info) {
           yyerror(error_message);
      }
     
+    if (temp->isConstant == 1) {
+          sprintf(error_message, "[!]Variable %s is constant -> ", name);
+          yyerror(error_message);
+     }
   
      if(strcmp(temp->type, info->type) != 0) {
           sprintf(error_message, "[!]Type mismatch for variable %s -> ", name);

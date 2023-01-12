@@ -1,38 +1,8 @@
-
-
-
-
-begin_progr {
-    int xd=5;
-    int dd=3;
-    xd = dd;
-     
-    elif(dd>3)
-    {
-    int xdddd=3232323;
-        
-        elif(dd<3)
-        {
-            int ddddd;
-        }
-        else{
-            int xddddddd;
-        }
-        if(dd>3)
-        {
-            int xdxd;
-        }
-    }
-    else{
-        int xddddd;
-    }
-    int xdddd;
-    string stringu;
-    stringu = "BUNAZIUASIBINEVAMGASITLAUNNOUEPISOD";
-    stringu ="BUNASEARA";
-    bool x=true;
-    int afterIf;
-    
+int func() {
+    int bn = 2;
+    return bn!
 }
 
-
+begin_progr {
+    int sal;
+}
