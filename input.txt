@@ -1,0 +1,14 @@
+class Foo {
+    private int da = 2;
+    public int tes = 3;
+
+    public int getDa() {
+        int buna = 2;
+        return 2!
+    }
+}
+
+begin_progr {
+    obj => Foo;
+    int x = obj.tes;
+}

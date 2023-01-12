@@ -183,10 +183,13 @@ void printStackValues();
 void test(const char* name);
 int wasDefinedInGlobalScope(const char* name);
 int wasDefinedInCurrentScope(const char* name);
+void updateArrayValue(const char* name, int index, struct information* info);
 // ---- 
 struct information* getInformationFromTable(const char* name);
 void addInstanceToTable(const char* name, const char* className);
 struct information* getInformationFromInstance(const char* name, const char* prop);
+void addFunctionToTableFromClass(const char* name, const char* parrentClass);
+void addFunctionToInstantce(const char* name, const char* instance);
 %}
 
 %union {
@@ -254,7 +257,8 @@ class_dec : ACCESSMODIFIER TYPE ID ';' {strcpy(accesModifier, $1); addVariableTo
           | ACCESSMODIFIER TYPE '[' NUMBER ']' ID ';' // array
           | ACCESSMODIFIER TYPE ID '[' NUMBER ']' ASSIGN expresii ';' {free($8);}// array at index NUMBER = assignedValue
           | ACCESSMODIFIER CONSTANT TYPE ID ASSIGN expresii ';' {strcpy(accesModifier, $1); addVariableToTable($4, $3, scope, CCONSTANT , $6); free($6);}
-          | ACCESSMODIFIER TYPE ID '(' lista_parametri ')' leftbracket list RETURN returnedvalue NEGATION rightbracket 
+          //| ACCESSMODIFIER TYPE ID '(' lista_parametri ')' leftbracket list RETURN returnedvalue NEGATION rightbracket {addFunctionToTable($2, $3, scope); strcpy(currentFunction, $3); currentFunctionIndex=symbolTableIndex-1; inFunction=0;} //function
+          | ACCESSMODIFIER TYPE ID {inFunction=1; addFunctionToTable($2, $3, scope); strcpy(currentFunction, $3); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($12->type,$2)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($3,$12); free($12);inFunction=0;} rightbracket //function
           ;
 
 declaratii_comune: TYPE ID ';' 
@@ -617,8 +621,28 @@ void addFunctionToTable( char* functionType, char *functionName, int scope){
      symbolTable[symbolTableIndex].scope=scope;
      symbolTable[symbolTableIndex].typeOfObject=FUNCTION;
      symbolTable[symbolTableIndex].numberOfParameters=0;
+
+     if (inClass == 1) {
+          strcpy(symbolTable[symbolTableIndex].parrentClass, currentClass);
+          symbolTable[symbolTableIndex].typeOfObject = CLASSMEMBER;
+          if (strcmp(accesModifier, "public") == 0) {
+               symbolTable[symbolTableIndex].accessModifier = PUBLIC;
+          } else if (strcmp(accesModifier, "private") == 0) {
+               symbolTable[symbolTableIndex].accessModifier = PRIVATE;
+          } else if (strcmp(accesModifier, "protected") == 0) {
+               symbolTable[symbolTableIndex].accessModifier = PROTECTED;
+          }
+     }
      symbolTableIndex++;
-     pushGlobalStack(functionName); // pana cand doar in global scope
+     if (scope == 0) {
+          pushGlobalStack(functionName);
+     } else {
+          pushScopeStack(functionName);
+     } // pana cand doar in global scope
+}
+void addFunctionToInstantce(const char* name, const char* instance)
+{
+
 }
 
 // !INFO: La moment doar adaug parametrul in stacul local, dar ei nu sunt salvati nicaieri
