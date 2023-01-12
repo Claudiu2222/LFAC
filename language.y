@@ -60,7 +60,7 @@ const char* _string = "string";
 const char* _bool = "bool";
 
 
-struct informations{
+struct information{
      int intVal;
      char boolVal[7];
      char strVal[256];
@@ -70,7 +70,7 @@ struct informations{
 };
 struct parameter{
      char name[50];
-     struct informations info;
+     struct information info;
 };
 
 
@@ -112,7 +112,7 @@ int currentFunctionIndex;
 
 int currentParameterIndex;
 struct symbol* calledFunction;
-void verifyArgument(struct informations* argument, int typeOfArgument, char* name);
+void verifyArgument(struct information* argument, int typeOfArgument, char* name);
 
 int inControlStatement = 0;
 
@@ -122,20 +122,20 @@ char accesModifier[10];
 
 void addParameterToFunction(struct symbol* functie, struct parameter* param);
 void addFunctionToTable(char* type, char *name,  int scope);
-void addVariableToTable(char *name, char* type, int scope, int isConstant, struct informations *info );
+void addVariableToTable(char *name, char* type, int scope, int isConstant, struct information *info );
 void addVariableFromSymToTable(char *name, char* type, int scope, int isConstant, const char* symbol_name);
 void printInfo();
 void initializeStack();
 void pushScope();
 void popScope();
-void add(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp);
-void subtract(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp);
-void multiply(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp);
-void divide(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp);
-void calculate(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp, int typeOfOperation);
-void verifyTypes(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp);
+void add(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void subtract(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void multiply(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void divide(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void calculate(struct information* finalExp, struct information* leftExp, struct information* rightExp, int typeOfOperation);
+void verifyTypes(struct information* finalExp, struct information* leftExp, struct information* rightExp);
 void showStack();
-void updateVariable(const char* name, struct informations* info);
+void updateVariable(const char* name, struct information* info);
 struct symbol* lookUpElement(const char* name);
 int returnTypeOfObject(const char* name);
 void addClass(const char* name);
@@ -153,7 +153,7 @@ void test(const char* name);
 int wasDefinedInGlobalScope(const char* name);
 int wasDefinedInCurrentScope(const char* name);
 // ---- 
-struct informations* getInformationFromTable(const char* name);
+struct information* getInformationFromTable(const char* name);
 void addInstanceToTable(const char* name, const char* className);
 %}
 
@@ -164,7 +164,7 @@ void addInstanceToTable(const char* name, const char* className);
   char* boolVal;
   char charVal;
 
-  struct informations *info;
+  struct information *info;
   struct parameter *param;
 
 }
@@ -237,40 +237,40 @@ declaratii_comune: TYPE ID ';'
                  | ID INSTANCEOF ID ';' {addInstanceToTable($1, $3);} // obj => Foo;
                  ;
 
-expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_MULTIPLICATION); free($1); free($3); $$=temp;}
-          | expresii DIVISION expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_DIVISION); free($1); free($3); $$=temp;}
-          | expresii AND expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_AND); free($1);free($3); $$=temp;}
-          | expresii OR expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_OR); free($1);free($3); $$=temp;}
-          | expresii LESSTHAN expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_LESSTHAN); free($1);free($3); $$=temp;}
-          | expresii LESSOREQUALTHAN expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_LESSOREQUALTHAN); free($1);free($3); $$=temp;}
-          | expresii GREATERTHAN expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_GREATERTHAN); free($1);free($3); $$=temp;}
-          | expresii GREATEROREQUALTHAN expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_GREATEROREQUALTHAN); free($1);free($3); $$=temp;}
-          | expresii EQUAL expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));calculate(temp, $1, $3, OP_EQUAL); free($1);free($3); $$=temp;}
-          | NEGATION expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $2, NULL, OP_NEGATION); free($2); $$=temp;}
-          | expresii PLUS expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_PLUS); free($1);free($3); $$=temp;}
-          | expresii MINUS expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_MINUS); free($1);free($3); $$=temp;}
+expresii:  expresii MULTIPLICATION expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_MULTIPLICATION); free($1); free($3); $$=temp;}
+          | expresii DIVISION expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_DIVISION); free($1); free($3); $$=temp;}
+          | expresii AND expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_AND); free($1);free($3); $$=temp;}
+          | expresii OR expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_OR); free($1);free($3); $$=temp;}
+          | expresii LESSTHAN expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_LESSTHAN); free($1);free($3); $$=temp;}
+          | expresii LESSOREQUALTHAN expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_LESSOREQUALTHAN); free($1);free($3); $$=temp;}
+          | expresii GREATERTHAN expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_GREATERTHAN); free($1);free($3); $$=temp;}
+          | expresii GREATEROREQUALTHAN expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_GREATEROREQUALTHAN); free($1);free($3); $$=temp;}
+          | expresii EQUAL expresii {struct information *temp=(struct information*)malloc(sizeof(struct information));calculate(temp, $1, $3, OP_EQUAL); free($1);free($3); $$=temp;}
+          | NEGATION expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $2, NULL, OP_NEGATION); free($2); $$=temp;}
+          | expresii PLUS expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_PLUS); free($1);free($3); $$=temp;}
+          | expresii MINUS expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_MINUS); free($1);free($3); $$=temp;}
           | '(' expresii ')' {$$=$2;}
-          | MINUS expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $2, NULL,OP_UNARYMINUS); free($2); $$=temp;}
-          | NUMBER {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;} 
-          | FLOAT  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;} 
-          | CHAR  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
-          | STRING  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
-          | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
-          | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex != calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct informations *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
+          | MINUS expresii {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $2, NULL,OP_UNARYMINUS); free($2); $$=temp;}
+          | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;} 
+          | FLOAT  {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;} 
+          | CHAR  {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
+          | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
+          | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
+          | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex != calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER 
-          | ID      {struct informations *temp = getInformationFromTable($1); test($1); $$=temp;} 
+          | ID      {struct information *temp = getInformationFromTable($1); test($1); $$=temp;} 
 
           ;
 //ifStatement
 
 
-returnedvalue: ID { struct informations *temp = getInformationFromTable($1); $$=temp;}
-               | NUMBER {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;}
-               | FLOAT {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;}
-               | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;}
-               | STRING {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;}
-               | CHAR {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;}
+returnedvalue: ID { struct information *temp = getInformationFromTable($1); $$=temp;}
+               | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;}
+               | FLOAT {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;}
+               | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;}
+               | STRING {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;}
+               | CHAR {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;}
                | ID '[' NUMBER ']' // array at index NUMBER
                ;
 
@@ -285,13 +285,13 @@ lista_argumente: /*epsilon*/
                | lista_argumente ',' arg 
                | arg
                ;
-arg: ID {if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a function, not a variable");}if(currentParameterIndex  >= calledFunction->numberOfParameters){yyerror("[!] Too many arguments");}; struct informations *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1); free(temp); } // aici se face un verify sa nu am prea putine argumente, pt fiecare argument se verifica in verifyArgument daca coincide sau nu cu tipul parametrului cu care corespunde. Vezi functia verifyArgument 
-    | NUMBER {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->intVal=$1; strcpy(temp->type,_int); verifyArgument(temp, LITERAL, NULL); free(temp);} 
-    | FLOAT {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->floatVal=$1; strcpy(temp->type,_float); verifyArgument(temp, LITERAL, NULL); free(temp);} 
-    | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); verifyArgument(temp, LITERAL, NULL); free(temp);} 
-    | STRING {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->strVal,$1); strcpy(temp->type,_string); verifyArgument(temp, LITERAL, NULL); free(temp);}
-    | CHAR {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,_char); verifyArgument(temp, LITERAL, NULL); free(temp);} 
-    | ID /*{struct informations *temp = getInformationFromTable($1); verifyArgument(temp, FUNCTION, $1);if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a variable, not a function");}  free(temp);}*/'(' lista_argumente ')' // segmentation fault pt apeluri de functii ca argument.. Nu stiu dc is prea obosit sa mai verific . EDIT: SEG FAULT PT ORICE ARGUMENT CE NU A FOST DECLARAT BEFORE (si variabile si functii)
+arg: ID {if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a function, not a variable");}if(currentParameterIndex  >= calledFunction->numberOfParameters){yyerror("[!] Too many arguments");}; struct information *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1); free(temp); } // aici se face un verify sa nu am prea putine argumente, pt fiecare argument se verifica in verifyArgument daca coincide sau nu cu tipul parametrului cu care corespunde. Vezi functia verifyArgument 
+    | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); verifyArgument(temp, LITERAL, NULL); free(temp);} 
+    | FLOAT {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); verifyArgument(temp, LITERAL, NULL); free(temp);} 
+    | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); verifyArgument(temp, LITERAL, NULL); free(temp);} 
+    | STRING {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->strVal,$1); strcpy(temp->type,_string); verifyArgument(temp, LITERAL, NULL); free(temp);}
+    | CHAR {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); verifyArgument(temp, LITERAL, NULL); free(temp);} 
+    | ID /*{struct information *temp = getInformationFromTable($1); verifyArgument(temp, FUNCTION, $1);if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a variable, not a function");}  free(temp);}*/'(' lista_argumente ')' // segmentation fault pt apeluri de functii ca argument.. Nu stiu dc is prea obosit sa mai verific . EDIT: SEG FAULT PT ORICE ARGUMENT CE NU A FOST DECLARAT BEFORE (si variabile si functii)
     | ID '.' ID '(' lista_argumente ')' // todo when classes are done
     | ID '[' NUMBER ']' // todo when arrays are done
     | ID '.' ID // todo when classes are done
@@ -335,12 +335,12 @@ printInfo();
 } 
 
 // -- Functions --
-struct informations* getInformationFromTable(const char* name) {
+struct information* getInformationFromTable(const char* name) {
   //   printf(" %s IN GETINFO ", name);
      
      struct symbol* temp = lookUpElement(name);
      
-     struct informations* temp2 = (struct informations*)malloc(sizeof(struct informations));
+     struct information* temp2 = (struct information*)malloc(sizeof(struct information));
      if (temp != NULL) {
           strcpy(temp2->type, temp->type);
           temp2->intVal = temp->intVal;
@@ -404,7 +404,7 @@ int wasDefinedInCurrentScope(const char* name) {
      return 0;
 }
 
-void addVariableToTable(char *name, char* type, int scope, int isConstant, struct informations *info ){
+void addVariableToTable(char *name, char* type, int scope, int isConstant, struct information *info ){
     
      // Print the symbol data
      //printf("name : %s\n", name);
@@ -478,7 +478,7 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
           pushScopeStack(name);
      }
 
-     // If we are in a calss, we need to specify other informations precum 
+     // If we are in a calss, we need to specify other information precum 
      if (inClass == 1) {
           strcpy(symbolTable[symbolTableIndex].parrentClass, currentClass);
           symbolTable[symbolTableIndex].typeOfObject = CLASSMEMBER;
@@ -650,7 +650,7 @@ void printInfo()
 }
 
 
-void add(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void add(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      if(strcmp(leftExp->type, "int") == 0)
      {
@@ -675,7 +675,7 @@ void add(struct informations* finalExp, struct informations* leftExp, struct inf
           yyerror("[!]Illegal boolean operation");
      }
 }
-void subtract(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void subtract(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      if(strcmp(leftExp->type, "int") == 0)
      {
@@ -700,7 +700,7 @@ void subtract(struct informations* finalExp, struct informations* leftExp, struc
           yyerror("[!]Illegal boolean operation");
      }
 }
-void multiply(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void multiply(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      if(strcmp(leftExp->type, "int") == 0)
      {
@@ -726,7 +726,7 @@ void multiply(struct informations* finalExp, struct informations* leftExp, struc
      }
 }
 
-void divide(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void divide(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      if(strcmp(leftExp->type, "int") == 0)
      {
@@ -760,7 +760,7 @@ void divide(struct informations* finalExp, struct informations* leftExp, struct 
      }
 }
 
-void equal(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void equal(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      strcpy(finalExp->type, "bool");
      if(strcmp(leftExp->type, "int") == 0)
@@ -801,7 +801,7 @@ void equal(struct informations* finalExp, struct informations* leftExp, struct i
  
      }
 }
-void lessThan(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void lessThan(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      strcpy(finalExp->type, "bool");
      if(strcmp(leftExp->type, "int") == 0)
@@ -838,7 +838,7 @@ void lessThan(struct informations* finalExp, struct informations* leftExp, struc
           yyerror("[!]Illegal boolean operation");
      }
 }
-void lessOrEqualThan(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void lessOrEqualThan(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      strcpy(finalExp->type, "bool");
      if(strcmp(leftExp->type, "int") == 0)
@@ -875,7 +875,7 @@ void lessOrEqualThan(struct informations* finalExp, struct informations* leftExp
           yyerror("[!]Illegal boolean operation");
      }
 }
-void greaterThan(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void greaterThan(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      strcpy(finalExp->type, "bool");
      if(strcmp(leftExp->type, "int") == 0)
@@ -912,7 +912,7 @@ void greaterThan(struct informations* finalExp, struct informations* leftExp, st
           yyerror("[!]Illegal boolean operation");
      }
 }
-void greaterOrEqualThan(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void greaterOrEqualThan(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      strcpy(finalExp->type, "bool");
      if(strcmp(leftExp->type, "int") == 0)
@@ -949,7 +949,7 @@ void greaterOrEqualThan(struct informations* finalExp, struct informations* left
           yyerror("[!]Illegal boolean operation");
      }
 }
-void or(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void or(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      strcpy(finalExp->type, "bool");
      if(strcmp(leftExp->type, "int") == 0)
@@ -980,7 +980,7 @@ void or(struct informations* finalExp, struct informations* leftExp, struct info
                strcpy(finalExp->boolVal, "false");
      }
 }
-void and(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp)
+void and(struct information* finalExp, struct information* leftExp, struct information* rightExp)
 {
      strcpy(finalExp->type, "bool");
      if(strcmp(leftExp->type, "int") == 0)
@@ -1011,7 +1011,7 @@ void and(struct informations* finalExp, struct informations* leftExp, struct inf
                strcpy(finalExp->boolVal, "false");
      }
 }
-void negation(struct informations* finalExp, struct informations* leftExp)
+void negation(struct information* finalExp, struct information* leftExp)
 {
      strcpy(finalExp->type, "bool");
      if(strcmp(leftExp->type, "int") == 0)
@@ -1043,7 +1043,7 @@ void negation(struct informations* finalExp, struct informations* leftExp)
      }
  
 }
-void unaryNegation(struct informations* finalExp, struct informations* leftExp)
+void unaryNegation(struct information* finalExp, struct information* leftExp)
 {
      
      if(strcmp(leftExp->type, "int") == 0)
@@ -1101,7 +1101,7 @@ struct symbol* lookUpElement(const char* name){
      return NULL;
      
 }
-void verifyArgument(struct informations* argument, int typeOfArgument, char* name){
+void verifyArgument(struct information* argument, int typeOfArgument, char* name){
 
      char errorMsg[100];
      if(name != NULL)
@@ -1143,7 +1143,7 @@ void test(const char* name)
           printf("Name: %s, Type: %s, Value: %d, Scope: %d\n", temp->name, temp->type, temp->intVal, temp->scope);
      }
 }
-void calculate(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp, int typeOfOperation)
+void calculate(struct information* finalExp, struct information* leftExp, struct information* rightExp, int typeOfOperation)
 {
      if(rightExp!=NULL)
           {if(strcmp(leftExp->type, rightExp->type) != 0)
@@ -1265,7 +1265,7 @@ int returnTypeOfObject(const char* name){
     
      return type;
 }
-void updateVariable(const char* name, struct informations* info) {
+void updateVariable(const char* name, struct information* info) {
      struct symbol* temp = lookUpElement(name);
   
      char error_message[100]; 

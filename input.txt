@@ -3,7 +3,11 @@ class Foo {
     private int x = 2;
     public  int y;
 }
-
+int functiaVietii(int ceva, int altceva)
+{
+    int bine=20;
+    return bine;
+}
 begin_progr{
     obj => Foo;
     int wassabi; 
