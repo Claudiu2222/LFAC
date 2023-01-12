@@ -1,25 +1,10 @@
-int cev;
-string fusadsanc(int d1, float d2, string d3, char d4, bool d5) {
-    string bn = "teste";
-    return bn!
+class Foo {
+    public  const int bb = 3;
+    private int x = 2;
+    public  int y;
 }
 
-int altaFunctie()
-{
-    int okBro=69;
-    return okBro!
-}
-int ba;
-begin_progr {
-    int ok;
-    int cvv;
-    float alt;
-    string alt2;
-    char alt3;
-    bool alt4;
-    
-    int k;
-    const string sal=fusadsanc(ok,alt,alt2,alt3,alt4);
-    int altcv;
-   
+begin_progr{
+    obj => Foo;
+    int wassabi; 
 }

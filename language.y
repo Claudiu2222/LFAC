@@ -21,9 +21,11 @@ extern int yylineno;
 #define LITERAL 0
 #define VARIABLE 1
 #define FUNCTION 2
-#define CLASS_ 3
-#define OBJECT 4
-#define ARRAY 5
+#define _CLASS_ 3
+#define CLASSMEMBER 4
+
+#define OBJECT 5
+#define ARRAY 6
 
 #define OP_OR 1
 #define OP_AND 2 
@@ -42,6 +44,10 @@ extern int yylineno;
 #define MAXPARAMETERS 100
 #define MAXSYMBOLS 200
 #define GLOBAL 0
+
+#define PRIVATE 0
+#define PUBLIC 1
+#define PROTECTED 2
 
 extern int yylex();
 void yyerror(char * s);
@@ -66,12 +72,17 @@ struct parameter{
      char name[50];
      struct informations info;
 };
+
+
+
 struct symbol{
      char name[50]; // 
      char type[30];     //
      int scope;    // 
      int isConstant; //
-     int typeOfObject; //
+     int typeOfObject; // 1 var, 2 functie, 3 clasa, 4 membru de clasa, 5 array
+     char parrentClass[50];
+     int accessModifier;
      char charValue;
      int intVal;
      char* boolValue;
@@ -81,7 +92,6 @@ struct symbol{
      char *characterVector;
 	char **stringVector;
      int vectorSize;
-     int isPrivate;
      
      struct parameter parameters[MAXPARAMETERS];
      int numberOfParameters;
@@ -106,6 +116,10 @@ void verifyArgument(struct informations* argument, int typeOfArgument, char* nam
 
 int inControlStatement = 0;
 
+int inClass = 0;
+char currentClass[50];
+char accesModifier[10];
+
 void addParameterToFunction(struct symbol* functie, struct parameter* param);
 void addFunctionToTable(char* type, char *name,  int scope);
 void addVariableToTable(char *name, char* type, int scope, int isConstant, struct informations *info );
@@ -124,6 +138,8 @@ void showStack();
 void updateVariable(const char* name, struct informations* info);
 struct symbol* lookUpElement(const char* name);
 int returnTypeOfObject(const char* name);
+void addClass(const char* name);
+
 // Scope System
 void initGlobalStack();
 void initScopeStack();
@@ -138,6 +154,7 @@ int wasDefinedInGlobalScope(const char* name);
 int wasDefinedInCurrentScope(const char* name);
 // ---- 
 struct informations* getInformationFromTable(const char* name);
+void addInstanceToTable(const char* name, const char* className);
 %}
 
 %union {
@@ -151,7 +168,7 @@ struct informations* getInformationFromTable(const char* name);
   struct parameter *param;
 
 }
-%token BEGIN_PR END_PR ELIF RETURN CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
+%token BEGIN_PR END_PR INSTANCEOF ELIF RETURN CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
 
 %token <strVal>TYPE
 %token <intVal>NUMBER
@@ -159,6 +176,7 @@ struct informations* getInformationFromTable(const char* name);
 %token <floatVal>FLOAT
 %token <charVal>CHAR
 %token <strVal>STRING
+%token <strVal>ACCESSMODIFIER
 
 %token <strVal>ID 
 %type<info>expresii
@@ -192,8 +210,19 @@ rightbracket: RIGHTBRACKET {revertScope();}
 
 declaratie : declaratii_comune {printf("ies din declaratie\n");} 
            | TYPE ID {addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);} rightbracket //function
-           | CLASS ID leftbracket list rightbracket {printf(" %s \n", $2);}    
+           | CLASS ID {strcpy(currentClass, $2); inClass = 1;} leftbracket class_decs rightbracket {addClass($2); inClass = 0;}   
            ; 
+
+class_decs : class_decs class_dec
+           | class_dec
+           ;
+
+class_dec : ACCESSMODIFIER TYPE ID ';' {strcpy(accesModifier, $1); addVariableToTable($3, $2, scope, NONCONSTANT , 0);}//variable
+          | ACCESSMODIFIER TYPE ID ASSIGN expresii ';' {strcpy(accesModifier, $1); addVariableToTable($3, $2, scope, NONCONSTANT , $5); free($5);}//variable
+          | ACCESSMODIFIER TYPE '[' NUMBER ']' ID ';' // array
+          | ACCESSMODIFIER TYPE ID '[' NUMBER ']' ASSIGN expresii ';' {free($8);}// array at index NUMBER = assignedValue
+          | ACCESSMODIFIER CONSTANT TYPE ID ASSIGN expresii ';' {strcpy(accesModifier, $1); addVariableToTable($4, $3, scope, CCONSTANT , $6); free($6);}
+          ;
 
 declaratii_comune: TYPE ID ';' 
                     {addVariableToTable($2, $1, scope, NONCONSTANT , 0);}//variable
@@ -205,6 +234,7 @@ declaratii_comune: TYPE ID ';'
                  | ID ASSIGN expresii ';' { updateVariable($1, $3); free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
                  | ID '[' NUMBER ']' ASSIGN expresii ';' {free($6);}// array at index NUMBER = assignedValue
                  | CONSTANT TYPE ID ASSIGN expresii ';' {addVariableToTable($3, $2, scope, CCONSTANT , $5); free($5); }//variable // const id = 2 + 3;
+                 | ID INSTANCEOF ID ';' {addInstanceToTable($1, $3);} // obj => Foo;
                  ;
 
 expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); calculate(temp, $1, $3, OP_MULTIPLICATION); free($1); free($3); $$=temp;}
@@ -228,8 +258,7 @@ expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct i
           | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
           | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex != calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct informations *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
           | ID '.' ID '(' lista_argumente ')'  //method call
-          | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER
-          | ID '.' ID   // class attribute
+          | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER 
           | ID      {struct informations *temp = getInformationFromTable($1); test($1); $$=temp;} 
 
           ;
@@ -353,12 +382,12 @@ int wasDefinedInCurrentScope(const char* name) {
                               
                               if(symbolTable[j].scope >= diffScope)
                               {
-                                   //if (inControlStatement > 0) {
+                                   if (inControlStatement > 0) {
                                         return 1;
-                                   //} 
-                                   //else 
+                                   } 
+                                   else return 0; 
                                    
-                              }
+                              } else return 0;
                          }
                     }
                }
@@ -442,7 +471,6 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
                strcpy(symbolTable[symbolTableIndex].stringValue,info->strVal);
           }
      } 
-     symbolTableIndex++;
 
      if (scope == 0) {
           pushGlobalStack(name);
@@ -450,6 +478,19 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
           pushScopeStack(name);
      }
 
+     // If we are in a calss, we need to specify other informations precum 
+     if (inClass == 1) {
+          strcpy(symbolTable[symbolTableIndex].parrentClass, currentClass);
+          symbolTable[symbolTableIndex].typeOfObject = CLASSMEMBER;
+          if (strcmp(accesModifier, "public") == 0) {
+               symbolTable[symbolTableIndex].accessModifier = PUBLIC;
+          } else if (strcmp(accesModifier, "private") == 0) {
+               symbolTable[symbolTableIndex].accessModifier = PRIVATE;
+          } else if (strcmp(accesModifier, "protected") == 0) {
+               symbolTable[symbolTableIndex].accessModifier = PROTECTED;
+          }
+     }
+     symbolTableIndex++;
           //printf("new simbol added to table\n===\n");
           //// Print the symbol data
           //printf("name : %s\n", symbolTable[symbolTableIndex-1].name);
@@ -573,6 +614,35 @@ void printInfo()
                {
                     printf("--->Name of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].name);
                     printf("--->Type of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].info.type);
+               }
+          }
+          else if (symbolTable[i].typeOfObject == _CLASS_)
+          {
+               printf("%s is a class! \n", symbolTable[i].name);
+          }
+          else if (symbolTable[i].typeOfObject == CLASSMEMBER)
+          {
+               printf("Parrent class of symbol[%s]:%s\n", symbolTable[i].name, symbolTable[i].parrentClass);
+               printf("Access modifier of symbol[%s]:%d\n", symbolTable[i].name, symbolTable[i].accessModifier);
+                if(strcmp(symbolTable[i].type, "char") == 0)
+               {
+                    printf("The value of [%s]:%c\n", symbolTable[i].name, symbolTable[i].charValue);
+               }
+               else if(strcmp(symbolTable[i].type, "bool") == 0)
+               {
+                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].boolValue);
+               }
+               else if(strcmp(symbolTable[i].type, "int") == 0)
+               {
+                    printf("The value of [%s]:%d\n", symbolTable[i].name, symbolTable[i].intVal);
+               }
+               else if(strcmp(symbolTable[i].type, "float") == 0)
+               {
+                    printf("The value of [%s]:%f\n", symbolTable[i].name, symbolTable[i].floatValue);
+               }
+               else if(strcmp(symbolTable[i].type, "string") == 0)
+               {
+                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].stringValue);
                }
           }
           
@@ -1229,8 +1299,34 @@ void updateVariable(const char* name, struct informations* info) {
           {    if(temp->boolValue == NULL)
                     temp->boolValue = (char*)malloc(7*sizeof(char));
                strcpy(temp->boolValue, info->boolVal);}
+}
 
+void addClass(const char* name)
+{
+     // Cautam daca numele a fost folosi pe global deja 
+     if (wasDefinedInGlobalScope(name) == 1) {
+          char error_message[100];
+          sprintf(error_message, "[!]Class %s already defined in global scope -> ", name);
+          yyerror(error_message);
+     }
 
-     
+     // Adaugam clasa in symbol table
+     strcpy(symbolTable[symbolTableIndex].name, name);
+     strcpy(symbolTable[symbolTableIndex].type, "class");
+     symbolTable[symbolTableIndex].scope=scope;
+     symbolTable[symbolTableIndex].typeOfObject=_CLASS_;
+     symbolTableIndex++;
+     pushGlobalStack(name);
+}
+
+void addInstanceToTable(const char* name, const char* className) {
+     // 1. Find className in global stack
+     char error_message[100];
+     if (wasDefinedInGlobalScope(className) == 0) {
+          sprintf(error_message, "[!]Class %s not defined -> ", className);
+          yyerror(error_message);
+     }
+
+     // 2. Daca exista, continuam prin a adauga in .values, variabilele din clasa
      
 }

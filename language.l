@@ -8,6 +8,8 @@
 %%
 "const" {return CONSTANT;}
 "int"|"float"|"char"|"string"|"bool" {yylval.strVal = strdup(yytext); return TYPE;}
+"private"|"public"|"protected" {yylval.strVal = strdup(yytext); return ACCESSMODIFIER;}
+"=>" {return INSTANCEOF;}
 "begin_progr" {return BEGIN_PR;}
 "end_progr" {return END_PR;}
 "if" {return IF;}
