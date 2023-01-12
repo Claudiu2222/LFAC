@@ -1,0 +1,35 @@
+class Foo {
+    private const int MARE = 2;
+
+    public int x = 2;
+    public int y = x;
+    private int z = 3;
+    public int w = z + y;
+
+    public int f() {
+        int da = 2;
+        return da!
+    }
+}
+int cvvvv()
+{
+    float sugii;
+    return 2!
+}
+begin_progr {
+    obj => Foo;
+
+    int x = obj.w;
+    obj.w = 1;
+ 
+    int cv=300;
+    int[20] cd;
+    TYPEOF(300+cvvvv());
+    TYPEOF(true && 1 > 0);
+    TYPEOF("OK");
+    TYPEOF(2.3+5.5);
+    EVAL(300+obj.w);
+    EVAL(true && 1 > 0);
+  
+
+}

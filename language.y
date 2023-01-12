@@ -163,6 +163,7 @@ void subtract(struct information* finalExp, struct information* leftExp, struct 
 void multiply(struct information* finalExp, struct information* leftExp, struct information* rightExp);
 void divide(struct information* finalExp, struct information* leftExp, struct information* rightExp);
 void calculate(struct information* finalExp, struct information* leftExp, struct information* rightExp, int typeOfOperation);
+void eval(struct information* expression);
 void verifyTypes(struct information* finalExp, struct information* leftExp, struct information* rightExp);
 void showStack();
 void updateVariable(const char* name, struct information* info);
@@ -320,7 +321,7 @@ lista_argumente: /*epsilon*/
                | lista_argumente ',' arg 
                | arg
                ;
-arg: ID {verifyIfSymbolNameIsAVariable($1); if(currentParameterIndex  >= calledFunction->numberOfParameters){yyerror("[!] Too many arguments");}; struct information *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1);currentParameterIndex++; free(temp); } // aici se face un verify sa nu am prea putine argumente, pt fiecare argument se verifica in verifyArgument daca coincide sau nu cu tipul parametrului cu care corespunde. Vezi functia verifyArgument 
+arg:  ID {verifyIfSymbolNameIsAVariable($1); if(currentParameterIndex  >= calledFunction->numberOfParameters){yyerror("[!] Too many arguments");}; struct information *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1);currentParameterIndex++; free(temp); } // aici se face un verify sa nu am prea putine argumente, pt fiecare argument se verifica in verifyArgument daca coincide sau nu cu tipul parametrului cu care corespunde. Vezi functia verifyArgument 
     | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);} 
     | FLOAT {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);} 
     | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);} 
@@ -330,6 +331,7 @@ arg: ID {verifyIfSymbolNameIsAVariable($1); if(currentParameterIndex  >= calledF
     | ID '.' ID '(' lista_argumente ')' {currentParameterIndex++;}// todo when classes are done
     | ID '[' NUMBER ']' { struct information *temp = getInformationFromTable($1); verifyArgument(temp, ARRAY, $1);currentParameterIndex++;}// todo when arrays are done
     | ID '.' ID // todo when classes are done
+    
     ;
 
 /* bloc main */
@@ -349,6 +351,8 @@ list :  statement
 statement: declaratii_comune		 
          | ID '(' lista_apel ')' ';'
          | if_statement
+         | TYPEOF '(' expresii ')' ';' { printf("The type of the expression you have written is: %s\n",$3->type);free($3);}
+         | EVAL '(' expresii ')' ';' {eval($3); free($3);}
          ;
         
 lista_apel : NUMBER
@@ -618,6 +622,7 @@ void addFunctionToTable( char* functionType, char *functionName, int scope){
      symbolTable[symbolTableIndex].typeOfObject=FUNCTION;
      symbolTable[symbolTableIndex].numberOfParameters=0;
      symbolTableIndex++;
+   
      pushGlobalStack(functionName); // pana cand doar in global scope
 }
 
@@ -1375,6 +1380,28 @@ void verifyIfSymbolNameIsAVariable(const char* name){
       {   sprintf(errorMsg, "[!]Id [%s] is not a variable", name);
           yyerror(errorMsg);
       }
+}
+void eval(struct information* expression){
+if(strcmp(expression->type,_string) == 0)
+{
+     printf("The result of the expression you have written is: %s\n",expression->strVal);
+}
+else if(strcmp(expression->type,_int) == 0)
+{
+     printf("The result of the expression you have written is: %d\n",expression->intVal);
+}
+else if(strcmp(expression->type,_float) == 0)
+{
+     printf("The result of the expression you have written is: %f\n",expression->floatVal);
+}
+else if(strcmp(expression->type,_char) == 0)
+{
+     printf("The result of the expression you have written is: %c\n",expression->charVal);
+}
+else if(strcmp(expression->type,_bool) == 0)
+{
+     printf("The result of the expression you have written is: %s\n",expression->boolVal);
+}
 }
 void verifyArgument(struct information* argument, int typeOfArgument, char* name){
 
