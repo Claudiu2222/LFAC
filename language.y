@@ -82,12 +82,13 @@ struct objval {
 
      char charValue;
      int intVal;
-     char** boolValue;
+     char* boolValue;
      float floatValue;
      char *stringValue;
      int *integerVector;
      char *characterVector;
 	char **stringVector;
+     char** booleanVector;
      int vectorSize;
      
      struct parameter parameters[MAXPARAMETERS];
