@@ -2,13 +2,25 @@ class Foo {
     public  const int bb = 3;
     private int x = 2;
     public  int y;
+    
 }
-int functiaVietii(int ceva, int altceva)
+
+int functiaVietii()
 {
     int bine=20;
-    return bine;
+    
+    return 2!
+}
+int badas(int okkey){
+    int suntProst;
+    okkey = 30;
+    return suntProst!
 }
 begin_progr{
     obj => Foo;
     int wassabi; 
+    int da;
+    int bine=20;
+  int cv =badas(functiaVietii());
 }
+

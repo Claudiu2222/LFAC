@@ -209,7 +209,7 @@ rightbracket: RIGHTBRACKET {revertScope();}
             ;
 
 declaratie : declaratii_comune {printf("ies din declaratie\n");} 
-           | TYPE ID {addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);} rightbracket //function
+           | TYPE ID {inFunction=1; addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);inFunction=0;} rightbracket //function
            | CLASS ID {strcpy(currentClass, $2); inClass = 1;} leftbracket class_decs rightbracket {addClass($2); inClass = 0;}   
            ; 
 
@@ -291,7 +291,7 @@ arg: ID {if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a function,
     | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); verifyArgument(temp, LITERAL, NULL); free(temp);} 
     | STRING {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->strVal,$1); strcpy(temp->type,_string); verifyArgument(temp, LITERAL, NULL); free(temp);}
     | CHAR {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); verifyArgument(temp, LITERAL, NULL); free(temp);} 
-    | ID /*{struct information *temp = getInformationFromTable($1); verifyArgument(temp, FUNCTION, $1);if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a variable, not a function");}  free(temp);}*/'(' lista_argumente ')' // segmentation fault pt apeluri de functii ca argument.. Nu stiu dc is prea obosit sa mai verific . EDIT: SEG FAULT PT ORICE ARGUMENT CE NU A FOST DECLARAT BEFORE (si variabile si functii)
+    | ID {if(returnTypeOfObject($1) == VARIABLE){yyerror("[!] This is a variable, not a function");} struct information *temp = getInformationFromTable($1); verifyArgument(temp, FUNCTION, $1); free(temp);}'(' lista_argumente ')' { if(currentParameterIndex != calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); }  // segmentation fault pt apeluri de functii ca argument.. Nu stiu dc is prea obosit sa mai verific . EDIT: SEG FAULT PT ORICE ARGUMENT CE NU A FOST DECLARAT BEFORE (si variabile si functii)
     | ID '.' ID '(' lista_argumente ')' // todo when classes are done
     | ID '[' NUMBER ']' // todo when arrays are done
     | ID '.' ID // todo when classes are done
@@ -354,6 +354,7 @@ struct information* getInformationFromTable(const char* name) {
      // If nu exista variabila ;)
      free(temp);
      char error_message[100];
+     
      sprintf(error_message, "[!] Variable %s was not declared", name);
      yyerror(error_message);
      return NULL;
@@ -372,7 +373,12 @@ int wasDefinedInGlobalScope(const char* name){
 
      
 int wasDefinedInCurrentScope(const char* name) {
-     
+     if(inFunction == 1)
+     {
+          for(int i=0; i < symbolTable[currentFunctionIndex].numberOfParameters; i++)
+               if(strcmp(symbolTable[currentFunctionIndex].parameters[i].name, name) == 0)
+                    return 1;
+     }
      for(int i=0; i < MAXSYMBOLS; i++) {
           if(strcmp(scopeStack[i], name) == 0)
                // Cautam scopeStack[i] in symbolTable
@@ -382,10 +388,10 @@ int wasDefinedInCurrentScope(const char* name) {
                               
                               if(symbolTable[j].scope >= diffScope)
                               {
-                                   if (inControlStatement > 0) {
+                                   
                                         return 1;
-                                   } 
-                                   else return 0; 
+                                   
+                                  
                                    
                               } else return 0;
                          }
@@ -395,12 +401,7 @@ int wasDefinedInCurrentScope(const char* name) {
           if(strcmp(scopeStack[i], "-1") == 0)
                return 0;
      } 
-     if(inFunction == 1)
-     {
-          for(int i=0; i < symbolTable[currentFunctionIndex].numberOfParameters; i++)
-               if(strcmp(symbolTable[currentFunctionIndex].parameters[i].name, name) == 0)
-                    return 1;
-     }
+     
      return 0;
 }
 
@@ -1074,6 +1075,14 @@ void unaryNegation(struct information* finalExp, struct information* leftExp)
 struct symbol* lookUpElement(const char* name){
      // Check daca este in global dupa in local stack
      struct symbol* temp = NULL;
+     if(inFunction == 1){
+          for(int i=0; i < symbolTable[currentFunctionIndex]->numberOfParameters; i++)
+          {
+               if(strcmp(symbolTable[currentFunctionIndex]->parameters[i].name, name) == 0)
+                    {temp = &symbolTable[currentFunctionIndex];
+                    return temp;}
+          }
+     }
      for(int i=0; i < MAXSYMBOLS; i++) {
           if(strcmp(globalStack[i], name) == 0)
                { 
@@ -1086,6 +1095,7 @@ struct symbol* lookUpElement(const char* name){
           if(strcmp(globalStack[i], "-1") == 0)
                break;
      } 
+     
      for(int i=0; i < MAXSYMBOLS; i++) {
           if(strcmp(scopeStack[i], name) == 0)
                { 
@@ -1104,6 +1114,11 @@ struct symbol* lookUpElement(const char* name){
 void verifyArgument(struct information* argument, int typeOfArgument, char* name){
 
      char errorMsg[100];
+     if(calledFunction->numberOfParameters <= currentParameterIndex)
+     {
+          sprintf(errorMsg, "[!]Too many arguments for function [%s]", calledFunction->name);
+          yyerror(errorMsg);
+     }
      if(name != NULL)
      {    //printStackValues();
            if(wasDefinedInCurrentScope(name) == 0 && wasDefinedInGlobalScope(name) == 0) // daca e functie sau var trb sa si verific sa fi fost definite ca puteam sa fac int x = functie(ceva), chiar daca ceva nu era definit before
@@ -1235,7 +1250,7 @@ void changeScope()
      if (scope == 0) {
           scope = last_scope + 2;
           diffScope = scope;
-          inFunction=1;
+         
      } else {
           scope = scope + 1;
           
@@ -1253,14 +1268,20 @@ void revertScope()
           last_scope = scope;
           diffScope = 0;
           scope = 0;
-          inFunction=0;
+          
           initScopeStack();
      } else {
           scope = scope - 1;
      }
 }
 int returnTypeOfObject(const char* name){
+     char error_message[50];
      struct symbol* temp = lookUpElement(name);
+     if(temp==NULL)
+     {
+          sprintf(error_message, "[!] [%s] was not declared  -> ", name);
+          yyerror(error_message);
+     }
      int type = temp->typeOfObject;
     
      return type;
