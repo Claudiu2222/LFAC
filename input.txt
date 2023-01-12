@@ -1,10 +1,21 @@
 class Foo {
+    private const int MARE = 2;
+
     public int x = 2;
     public int y = x;
+    private int z = 3;
+    public int w = z + y;
+
+    public int f() {
+        int da = 2;
+        return da!
+    }
 }
 
 begin_progr {
     obj => Foo;
-    int a;
-    
+
+    int x = obj.w;
+    obj.w = 1;
+
 }
