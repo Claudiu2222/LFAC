@@ -18,6 +18,7 @@ extern int yylineno;
 #define NONCONSTANT 0
 #define CCONSTANT 1
 
+#define LITERAL 0
 #define VARIABLE 1
 #define FUNCTION 2
 #define CLASS_ 3
@@ -101,7 +102,7 @@ int currentFunctionIndex;
 
 int currentParameterIndex;
 struct symbol* calledFunction;
-void verifyParameter(struct information* parameter);
+void verifyArgument(struct informations* argument, int typeOfArgument, char* name);
 
 int inControlStatement = 0;
 
@@ -122,6 +123,7 @@ void verifyTypes(struct informations* finalExp, struct informations* leftExp, st
 void showStack();
 void updateVariable(const char* name, struct informations* info);
 struct symbol* lookUpElement(const char* name);
+int returnTypeOfObject(const char* name);
 // Scope System
 void initGlobalStack();
 void initScopeStack();
@@ -188,10 +190,10 @@ leftbracket: LEFTBRACKET {changeScope();}
 rightbracket: RIGHTBRACKET {revertScope();}
             ;
 
-declaratie : declaratii_comune {printf("ies din declaratie\n");}
-           | TYPE ID {addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex--;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);} rightbracket //function
+declaratie : declaratii_comune {printf("ies din declaratie\n");} 
+           | TYPE ID {addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);} rightbracket //function
            | CLASS ID leftbracket list rightbracket {printf(" %s \n", $2);}    
-           ;
+           ; 
 
 declaratii_comune: TYPE ID ';' 
                     {addVariableToTable($2, $1, scope, NONCONSTANT , 0);}//variable
@@ -224,13 +226,14 @@ expresii:  expresii MULTIPLICATION expresii {struct informations *temp=(struct i
           | CHAR  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
           | STRING  {struct informations *temp=(struct informations*)malloc(sizeof(struct informations));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
-          | ID '(' lista_argumente ')'   {currentParameterIndex=0; calledFunction=lookUpElement($1); if(currentFunction == NULL){yyerror("[!] Function does not exist");} }    // PT FUNCTION CALL
+          | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex != calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct informations *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER
           | ID '.' ID   // class attribute
           | ID      {struct informations *temp = getInformationFromTable($1); test($1); $$=temp;} 
 
           ;
+//ifStatement
 
 
 returnedvalue: ID { struct informations *temp = getInformationFromTable($1); $$=temp;}
@@ -249,20 +252,20 @@ lista_parametri : /*epsilon*/
 parametru : TYPE ID {struct parameter* temp = (struct parameter*)malloc(sizeof(struct parameter)); strcpy(temp->name,$2); strcpy(temp->info.type,$1); $$=temp;}
           ;            
 
-lista_argumente: /*epsilon*/ {if(currentParameterIndex != calledFunction->numberOfParameters){yyerror("[!] Wrong number of parameters");}}
+lista_argumente: /*epsilon*/ 
                | lista_argumente ',' arg 
                | arg
                ;
-arg: ID {struct informations *temp = getInformationFromTable($1); /* verifyParameter(temp);*/ free(temp); }
-    | NUMBER //{}
-    | FLOAT
-    | BOOLEANVALUE
-    | STRING
-    | CHAR
-    | ID '(' lista_argumente ')'
-    | ID '.' ID '(' lista_argumente ')'
-    | ID '[' NUMBER ']'
-    | ID '.' ID
+arg: ID {if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a function, not a variable");}if(currentParameterIndex  >= calledFunction->numberOfParameters){yyerror("[!] Too many arguments");}; struct informations *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1); free(temp); } // aici se face un verify sa nu am prea putine argumente, pt fiecare argument se verifica in verifyArgument daca coincide sau nu cu tipul parametrului cu care corespunde. Vezi functia verifyArgument 
+    | NUMBER {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->intVal=$1; strcpy(temp->type,_int); verifyArgument(temp, LITERAL, NULL); free(temp);} 
+    | FLOAT {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->floatVal=$1; strcpy(temp->type,_float); verifyArgument(temp, LITERAL, NULL); free(temp);} 
+    | BOOLEANVALUE {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); verifyArgument(temp, LITERAL, NULL); free(temp);} 
+    | STRING {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); strcpy(temp->strVal,$1); strcpy(temp->type,_string); verifyArgument(temp, LITERAL, NULL); free(temp);}
+    | CHAR {struct informations *temp=(struct informations*)malloc(sizeof(struct informations)); temp->charVal=$1; strcpy(temp->type,_char); verifyArgument(temp, LITERAL, NULL); free(temp);} 
+    | ID /*{struct informations *temp = getInformationFromTable($1); verifyArgument(temp, FUNCTION, $1);if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a variable, not a function");}  free(temp);}*/'(' lista_argumente ')' // segmentation fault pt apeluri de functii ca argument.. Nu stiu dc is prea obosit sa mai verific . EDIT: SEG FAULT PT ORICE ARGUMENT CE NU A FOST DECLARAT BEFORE (si variabile si functii)
+    | ID '.' ID '(' lista_argumente ')' // todo when classes are done
+    | ID '[' NUMBER ']' // todo when arrays are done
+    | ID '.' ID // todo when classes are done
     ;
 
 /* bloc main */
@@ -316,9 +319,11 @@ struct informations* getInformationFromTable(const char* name) {
           temp2->charVal = temp->charValue;
           if (temp->stringValue != NULL) strcpy(temp2->strVal, temp->stringValue);
           if (temp->boolValue != NULL) strcpy(temp2->boolVal, temp->boolValue);
-          return temp2;
+               
+               return temp2;
      }
      // If nu exista variabila ;)
+     free(temp);
      char error_message[100];
      sprintf(error_message, "[!] Variable %s was not declared", name);
      yyerror(error_message);
@@ -348,9 +353,11 @@ int wasDefinedInCurrentScope(const char* name) {
                               
                               if(symbolTable[j].scope >= diffScope)
                               {
-                                   if (inControlStatement > 0) {
+                                   //if (inControlStatement > 0) {
                                         return 1;
-                                   } else return 0;
+                                   //} 
+                                   //else 
+                                   
                               }
                          }
                     }
@@ -1024,15 +1031,38 @@ struct symbol* lookUpElement(const char* name){
      return NULL;
      
 }
-/* void verifyParameter(struct information* parameter){
-     char error_message[100];
-     for(int i = 0; i <= calledFunction->numberOfParameters; i++)
-     {
-          if(strcmp(parameter->type, calledFunction->parameters[i].type) != 0)
-               {// sprintf(error_message, "[!]Argument %s not declared  -> ", name);
-                  //  yyerror(error_message);}
-     }   
-} */
+void verifyArgument(struct informations* argument, int typeOfArgument, char* name){
+
+     char errorMsg[100];
+     if(name != NULL)
+     {    //printStackValues();
+           if(wasDefinedInCurrentScope(name) == 0 && wasDefinedInGlobalScope(name) == 0) // daca e functie sau var trb sa si verific sa fi fost definite ca puteam sa fac int x = functie(ceva), chiar daca ceva nu era definit before
+ 
+          {    
+               if(typeOfArgument == VARIABLE)    
+               {
+               sprintf(errorMsg, "[!]Variable [%s] was not defined before", name);
+               yyerror(errorMsg);
+               }
+               else if(typeOfArgument == FUNCTION)
+               {
+               sprintf(errorMsg, "[!]Function [%s] was not defined before", name);
+               yyerror(errorMsg);
+               }
+          }  
+     }
+
+
+     if(strcmp(calledFunction->parameters[currentParameterIndex++].info.type, argument->type) != 0)
+          {
+               sprintf(errorMsg, "[!]Argument [%d] has type [%s], but should have type [%s]", currentParameterIndex, argument->type, calledFunction->parameters[currentParameterIndex-1].info.type);
+               yyerror(errorMsg);
+          }
+     else{
+          printf("Argument [%d] is ok\n", currentParameterIndex-1);
+     }
+}
+
 void test(const char* name)
 {
      struct symbol* temp = lookUpElement(name);
@@ -1159,7 +1189,12 @@ void revertScope()
           scope = scope - 1;
      }
 }
-
+int returnTypeOfObject(const char* name){
+     struct symbol* temp = lookUpElement(name);
+     int type = temp->typeOfObject;
+    
+     return type;
+}
 void updateVariable(const char* name, struct informations* info) {
      struct symbol* temp = lookUpElement(name);
   
