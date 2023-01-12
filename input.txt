@@ -1,22 +1,36 @@
 
-int cevad;
-bool var = true;
-float functie(int v1){
-    int ceva=30;
-    float xd=5.3;
-    return xd
-}
 
 
 
 begin_progr {
     int xd=5;
-    if(xd>5)
+    int dd=3;
+    xd = dd;
+     
+    elif(dd>3)
     {
-        int xdd;
+    int xdddd=3232323;
+        
+        elif(dd<3)
+        {
+            int ddddd;
+        }
+        else{
+            int xddddddd;
+        }
+        if(dd>3)
+        {
+            int xdxd;
+        }
     }
-  
-    const float dd=23.3;
+    else{
+        int xddddd;
+    }
+    int xdddd;
+    string stringu;
+    stringu = "BUNAZIUASIBINEVAMGASITLAUNNOUEPISOD";
+    stringu ="BUNASEARA";
+    bool x=true;
     int afterIf;
     
 }

@@ -11,6 +11,7 @@
 "begin_progr" {return BEGIN_PR;}
 "end_progr" {return END_PR;}
 "if" {return IF;}
+"elif" {return ELIF;}
 "else" {return ELSE;}
 "while" {return WHILE;}
 "for" {return FOR;}

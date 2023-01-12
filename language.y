@@ -55,7 +55,7 @@ const char* _bool = "bool";
 
 struct informations{
      int intVal;
-     char boolVal[6];
+     char boolVal[7];
      char strVal[256];
      float floatVal;
      char charVal;
@@ -95,6 +95,11 @@ char* scopeStack[MAXSYMBOLS];
 char* globalStack[MAXSYMBOLS];
 int symbolTableIndex = 0;
 
+int inFunction;
+char currentFunction[50];
+int currentFunctionIndex;
+
+int inControlStatement = 0;
 
 void addParameterToFunction(struct symbol* functie, struct parameter* param);
 void addFunctionToTable(char* type, char *name,  int scope);
@@ -111,6 +116,7 @@ void divide(struct informations* finalExp, struct informations* leftExp, struct 
 void calculate(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp, int typeOfOperation);
 void verifyTypes(struct informations* finalExp, struct informations* leftExp, struct informations* rightExp);
 void showStack();
+void updateVariable(const char* name, struct informations* info);
 struct symbol* lookUpElement(const char* name);
 // Scope System
 void initGlobalStack();
@@ -138,7 +144,7 @@ struct informations* getInformationFromTable(const char* name);
   struct informations *info;
   struct parameter *param;
 }
-%token BEGIN_PR END_PR RETURN CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
+%token BEGIN_PR END_PR ELIF RETURN CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
 
 %token <strVal>TYPE
 %token <intVal>NUMBER
@@ -148,7 +154,7 @@ struct informations* getInformationFromTable(const char* name);
 %token <strVal>STRING
 
 %token <strVal>ID 
-
+%nonassoc IF2
 %type<info>expresii
 %type<param>parametru
 %type<info>returnedvalue
@@ -178,7 +184,7 @@ rightbracket: RIGHTBRACKET {revertScope();}
             ;
 
 declaratie : declaratii_comune {printf("ies din declaratie\n");}
-           | TYPE ID {addFunctionToTable($1, $2, scope);} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET declaratii_functii RETURN returnedvalue {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} } rightbracket //function
+           | TYPE ID {addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex--;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET declaratii_functii RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);} rightbracket //function
            | CLASS ID leftbracket declaratii_clasa rightbracket {printf(" %s \n", $2);}    
            ;
 declaratii_comune: TYPE ID ';' 
@@ -188,7 +194,6 @@ declaratii_comune: TYPE ID ';'
                     {addVariableToTable($2, $1, scope, NONCONSTANT , $4); free($4); } //variable or array - assign
 
                  | TYPE '[' NUMBER ']' ID ';' // array
-                 | TYPE '[' NUMBER ']' ID ASSIGN ID';' // array int[50] arra1 = array2;
                  | ID ASSIGN expresii ';' { updateVariable($1, $3); free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
                  | ID '[' NUMBER ']' ASSIGN expresii ';' {free($6);}// array at index NUMBER = assignedValue
                  | CONSTANT TYPE ID ASSIGN expresii ';' {addVariableToTable($3, $2, scope, CCONSTANT , $5); free($5); }//variable // const id = 2 + 3;
@@ -273,15 +278,10 @@ arg: ID
 bloc : BEGIN_PR leftbracket list rightbracket  
      ;
      
-if_statement:IF '(' expresii ')' leftbracket declaratii_if RIGHTBRACKET ELSE  leftbracket declaratii_if {scope--;} rightbracket  
-|           |IF '(' expresii ')' leftbracket declaratii_if rightbracket  
-            ;
-declaratii_if: declaratii_if declaratie_if
-             | declaratie_if
+if_statement: ELIF {inControlStatement++;} '('  expresii ')' leftbracket list rightbracket {inControlStatement--;} ELSE {inControlStatement++;} leftbracket list rightbracket {inControlStatement--;}  
+           | IF {inControlStatement++;} '('  expresii ')' leftbracket list rightbracket {inControlStatement--;} 
              ;
-declaratie_if: declaratii_comune
-               | if_statement 
-               ;
+               
 /* lista instructiuni (pt main)*/
 list :  statement 
      | list statement 
@@ -316,6 +316,7 @@ struct informations* getInformationFromTable(const char* name) {
   //   printf(" %s IN GETINFO ", name);
      
      struct symbol* temp = lookUpElement(name);
+     
      struct informations* temp2 = (struct informations*)malloc(sizeof(struct informations));
      if (temp != NULL) {
           strcpy(temp2->type, temp->type);
@@ -344,14 +345,20 @@ int wasDefinedInGlobalScope(const char* name){
 }
 
 int wasDefinedInCurrentScope(const char* name) {
+     
      for(int i=0; i < MAXSYMBOLS; i++) {
           if(strcmp(scopeStack[i], name) == 0)
                // Cautam scopeStack[i] in symbolTable
                {
                     for (int j = 0; j < symbolTableIndex; j++) {
                          if(strcmp(symbolTable[j].name, scopeStack[i]) == 0 ) {
+                              
                               if(symbolTable[j].scope >= diffScope)
-                                   return 1;
+                              {
+                                   if (inControlStatement > 0) {
+                                        return 1;
+                                   } else return 0;
+                              }
                          }
                     }
                }
@@ -359,6 +366,12 @@ int wasDefinedInCurrentScope(const char* name) {
           if(strcmp(scopeStack[i], "-1") == 0)
                return 0;
      } 
+     if(inFunction == 1)
+     {
+          for(int i=0; i < symbolTable[currentFunctionIndex].numberOfParameters; i++)
+               if(strcmp(symbolTable[currentFunctionIndex].parameters[i].name, name) == 0)
+                    return 1;
+     }
      return 0;
 }
 
@@ -536,6 +549,26 @@ void printInfo()
           else if(symbolTable[i].typeOfObject == FUNCTION)
           {
                printf("Number of parameters of symbol[%d]:%d\n", i, symbolTable[i].numberOfParameters);
+                if(strcmp(symbolTable[i].type, "char") == 0)
+               {
+                    printf("Returned value of function[%d]:%c\n", i, symbolTable[i].charValue);
+               }
+               else if(strcmp(symbolTable[i].type, "bool") == 0)
+               {
+                    printf("Returned value of function[%d]:%s\n", i, symbolTable[i].boolValue);
+               }
+               else if(strcmp(symbolTable[i].type, "int") == 0)
+               {
+                    printf("Returned value of function[%d]:%d\n", i, symbolTable[i].intVal);
+               }
+               else if(strcmp(symbolTable[i].type, "float") == 0)
+               {
+                    printf("Returned value of function[%d]:%f\n", i, symbolTable[i].floatValue);
+               }
+               else if(strcmp(symbolTable[i].type, "string") == 0)
+               {
+                    printf("Returned value of function[%d]:%s\n", i, symbolTable[i].stringValue);
+               }
                for(int j=0; j<symbolTable[i].numberOfParameters; j++)
                {
                     printf("--->Name of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].name);
@@ -1100,6 +1133,7 @@ void changeScope()
      if (scope == 0) {
           scope = last_scope + 2;
           diffScope = scope;
+          inFunction=1;
      } else {
           scope = scope + 1;
           
@@ -1117,25 +1151,45 @@ void revertScope()
           last_scope = scope;
           diffScope = 0;
           scope = 0;
+          inFunction=0;
           initScopeStack();
      } else {
           scope = scope - 1;
      }
 }
 
-void updateVariable(const char* name, strcut informations* info) {
+void updateVariable(const char* name, struct informations* info) {
      struct symbol* temp = lookUpElement(name);
-
+  
      char error_message[100]; 
      if(temp == NULL){
           sprintf(error_message, "[!]Variable %s not declared  -> ", name);
           yyerror(error_message);
      }
     
+  
      if(strcmp(temp->type, info->type) != 0) {
           sprintf(error_message, "[!]Type mismatch for variable %s -> ", name);
           yyerror(error_message);
      }
 
+  
+          temp->intVal = info->intVal;
+          temp->floatValue = info->floatVal;
+          temp->charValue = info->charVal;
+          
+          
+
+          if (info->strVal != NULL)
+          {    if(temp->stringValue == NULL)
+                    temp->stringValue = (char*)malloc(256*sizeof(char));
+               strcpy(temp->stringValue, info->strVal);}
+          if (info->boolVal != NULL) 
+          {    if(temp->boolValue == NULL)
+                    temp->boolValue = (char*)malloc(7*sizeof(char));
+               strcpy(temp->boolValue, info->boolVal);}
+
+
+     
      
 }
