@@ -42,6 +42,7 @@ extern int yylineno;
 #define OP_UNARYMINUS 13
 
 #define MAXPARAMETERS 100
+#define MAXARRAYSIZE 100
 #define MAXSYMBOLS 200
 #define GLOBAL 0
 
@@ -63,7 +64,7 @@ const char* _bool = "bool";
 struct information{
      int intVal;
      char boolVal[7];
-     char strVal[256];
+     char strVal[50];
      float floatVal;
      char charVal;
      char type[10];
@@ -85,12 +86,15 @@ struct symbol{
      int accessModifier;
      char charValue;
      int intVal;
-     char** boolValue;
+     char* boolValue;
      float floatValue;
      char *stringValue;
+     
      int *integerVector;
      char *characterVector;
 	char **stringVector;
+     float *floatVector;
+     char **booleanVector;
      int vectorSize;
      
      struct parameter parameters[MAXPARAMETERS];
@@ -120,9 +124,12 @@ int inClass = 0;
 char currentClass[50];
 char accesModifier[10];
 
+struct information* arrayValueAtIndex(const char* name, int index);
+
 void addParameterToFunction(struct symbol* functie, struct parameter* param);
 void addFunctionToTable(char* type, char *name,  int scope);
 void addVariableToTable(char *name, char* type, int scope, int isConstant, struct information *info );
+void addArrayToTable(const char* type, int numberOfElements, const char* name, int scope);
 void addVariableFromSymToTable(char *name, char* type, int scope, int isConstant, const char* symbol_name);
 void printInfo();
 void initializeStack();
@@ -139,7 +146,7 @@ void updateVariable(const char* name, struct information* info);
 struct symbol* lookUpElement(const char* name);
 int returnTypeOfObject(const char* name);
 void addClass(const char* name);
-
+void verifyIfSymbolNameIsAVariable(const char* name);
 // Scope System
 void initGlobalStack();
 void initScopeStack();
@@ -230,9 +237,9 @@ declaratii_comune: TYPE ID ';'
                  | TYPE ID ASSIGN  expresii ';' 
                     {addVariableToTable($2, $1, scope, NONCONSTANT , $4); free($4); } //variable or array - assign
 
-                 | TYPE '[' NUMBER ']' ID ';' // array
+                 | TYPE '[' NUMBER ']' ID ';' {addArrayToTable($1, $3, $5, scope);} // array
                  | ID ASSIGN expresii ';' { updateVariable($1, $3);  free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
-                 | ID '[' NUMBER ']' ASSIGN expresii ';' {free($6);}// array at index NUMBER = assignedValue
+                 | ID '[' NUMBER ']' ASSIGN expresii ';' { updateArrayValue($1, $3, $6); free($6);}// array at index NUMBER = assignedValue
                  | CONSTANT TYPE ID ASSIGN expresii ';' {addVariableToTable($3, $2, scope, CCONSTANT , $5); free($5); }//variable // const id = 2 + 3;
                  | ID INSTANCEOF ID ';' {addInstanceToTable($1, $3);} // obj => Foo;
                  ;
@@ -256,10 +263,10 @@ expresii:  expresii MULTIPLICATION expresii {struct information *temp=(struct in
           | CHAR  {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
           | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
-          | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex-1 < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
+          | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
           | ID '.' ID '(' lista_argumente ')'  //method call
-          | ID '[' NUMBER ']'  {printf(" %s IN EXPR[array] ", $1);} // array at index NUMBER 
-          | ID      {struct information *temp = getInformationFromTable($1); test($1); $$=temp;} 
+          | ID '[' NUMBER ']'  {struct information *temp= arrayValueAtIndex($1, $3); $$=temp;} // array at index NUMBER 
+          | ID      {struct information *temp = getInformationFromTable($1);  verifyIfSymbolNameIsAVariable($1); $$=temp;} 
 
           ;
 //ifStatement
@@ -285,15 +292,15 @@ lista_argumente: /*epsilon*/
                | lista_argumente ',' arg 
                | arg
                ;
-arg: ID {if(returnTypeOfObject($1) == FUNCTION){yyerror("[!] This is a function, not a variable");}if(currentParameterIndex  >= calledFunction->numberOfParameters){yyerror("[!] Too many arguments");}; struct information *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1); free(temp); } // aici se face un verify sa nu am prea putine argumente, pt fiecare argument se verifica in verifyArgument daca coincide sau nu cu tipul parametrului cu care corespunde. Vezi functia verifyArgument 
-    | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); verifyArgument(temp, LITERAL, NULL); free(temp);} 
-    | FLOAT {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); verifyArgument(temp, LITERAL, NULL); free(temp);} 
-    | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); verifyArgument(temp, LITERAL, NULL); free(temp);} 
-    | STRING {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->strVal,$1); strcpy(temp->type,_string); verifyArgument(temp, LITERAL, NULL); free(temp);}
-    | CHAR {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); verifyArgument(temp, LITERAL, NULL); free(temp);} 
+arg: ID {verifyIfSymbolNameIsAVariable($1); if(currentParameterIndex  >= calledFunction->numberOfParameters){yyerror("[!] Too many arguments");}; struct information *temp = getInformationFromTable($1); verifyArgument(temp, VARIABLE, $1);currentParameterIndex++; free(temp); } // aici se face un verify sa nu am prea putine argumente, pt fiecare argument se verifica in verifyArgument daca coincide sau nu cu tipul parametrului cu care corespunde. Vezi functia verifyArgument 
+    | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);} 
+    | FLOAT {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);} 
+    | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);} 
+    | STRING {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->strVal,$1); strcpy(temp->type,_string); verifyArgument(temp, LITERAL, NULL);currentParameterIndex++; free(temp);}
+    | CHAR {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); verifyArgument(temp, LITERAL, NULL); currentParameterIndex++;free(temp);} 
     | ID {if(returnTypeOfObject($1) == VARIABLE){yyerror("[!] This is a variable, not a function");} struct information *temp = getInformationFromTable($1); verifyArgument(temp, FUNCTION, $1); free(temp);}'(' lista_argumente ')' { struct information *temp=getInformationFromTable($1); }  // segmentation fault pt apeluri de functii ca argument.. Nu stiu dc is prea obosit sa mai verific . EDIT: SEG FAULT PT ORICE ARGUMENT CE NU A FOST DECLARAT BEFORE (si variabile si functii)
-    | ID '.' ID '(' lista_argumente ')' // todo when classes are done
-    | ID '[' NUMBER ']' // todo when arrays are done
+    | ID '.' ID '(' lista_argumente ')' {currentParameterIndex++;}// todo when classes are done
+    | ID '[' NUMBER ']' { struct information *temp = getInformationFromTable($1); verifyArgument(temp, ARRAY, $1);currentParameterIndex++;}// todo when arrays are done
     | ID '.' ID // todo when classes are done
     ;
 
@@ -339,7 +346,7 @@ struct information* getInformationFromTable(const char* name) {
   //   printf(" %s IN GETINFO ", name);
      
      struct symbol* temp = lookUpElement(name);
-     
+     char error_message[100];
      struct information* temp2 = (struct information*)malloc(sizeof(struct information));
      if (temp != NULL) {
           strcpy(temp2->type, temp->type);
@@ -353,7 +360,7 @@ struct information* getInformationFromTable(const char* name) {
      }
      // If nu exista variabila ;)
      free(temp);
-     char error_message[100];
+     
      
      sprintf(error_message, "[!] Variable %s was not declared", name);
      yyerror(error_message);
@@ -371,7 +378,38 @@ int wasDefinedInGlobalScope(const char* name){
 }
 
 
+struct information* arrayValueAtIndex(const char* name, int index){
+     struct symbol* temp = lookUpElement(name);
      
+     if(temp == NULL) {
+          char error_message[100];
+          sprintf(error_message, "[!] Array %s was not declared", name);
+          yyerror(error_message);
+          return NULL;
+     }
+
+     if(index >= temp->vectorSize) {
+          char error_message[100];
+          sprintf(error_message, "[!] Index out of bounds");
+          yyerror(error_message);
+          return NULL;
+     }
+   
+     struct information* temp2 = (struct information*)malloc(sizeof(struct information));
+     
+     strcpy(temp2->type, temp->type);
+     if(strcmp(temp->type, "int") == 0)
+     temp2->intVal = temp->integerVector[index];
+     else if(strcmp(temp->type, "float") == 0)
+     temp2->floatVal = temp->floatVector[index];
+     else if(strcmp(temp->type, "char") == 0)
+     temp2->charVal = temp->characterVector[index];
+     else if (strcmp(temp->type, "string") == 0)
+     if (temp->stringVector[index] != NULL) strcpy(temp2->strVal, temp->stringVector[index]);
+     else if(strcmp(temp->type, "bool") == 0)
+     if (temp->booleanVector[index] != NULL) strcpy(temp2->boolVal, temp->booleanVector[index]);
+     return temp2;
+} 
 int wasDefinedInCurrentScope(const char* name) {
      if(inFunction == 1)
      {
@@ -554,6 +592,121 @@ void addParameterToFunction(struct symbol *functie, struct parameter* param){
      pushScopeStack(param->name);
      free(param);
 }
+void updateArrayValue(const char* name, int index, struct information* info)
+{
+     char error_message[100];
+     struct symbol* array = lookUpElement(name);
+     if(index >= MAXARRAYSIZE)
+     {
+          yyerror("[!]Array index out of bounds");
+     }if(array == NULL)
+     {    sprintf(error_message, "[!]Array %s not defined in current or global scope -> ", name);
+          yyerror(error_message);
+     }
+     if(strcmp(array->type, info->type) != 0)
+     {
+          sprintf(error_message, "[!]Array %s type and value type do not match -> ", name);
+          yyerror(error_message);
+     }
+     if(strcmp(array->type, "int") == 0)
+     {
+          array->integerVector[index] = info->intVal;
+     }
+     else if(strcmp(array->type, "float") == 0)
+     {
+          array->floatVector[index] = info->floatVal;
+     }
+     else if(strcmp(array->type, "char") == 0)
+     {
+          array->characterVector[index] = info->charVal;
+     }
+     else if(strcmp(array->type, "bool") == 0)
+     {
+          strcpy(array->booleanVector[index],info->boolVal);
+     }
+     else if(strcmp(array->type, "string") == 0)
+     {
+          strcpy(array->stringVector[index],info->strVal);
+     }
+     
+    
+
+}
+void addArrayToTable(const char* type, int numberOfElements, const char* name, int scope){
+     
+     // Vefificam daca array-ul exista in global scope
+     char error_message[100];
+     if (wasDefinedInCurrentScope(name) == 1){
+          sprintf(error_message, "[!]Array already defined in current scope : %s  -> ", name);
+          yyerror(error_message);
+     }
+      else if (wasDefinedInGlobalScope(name) == 1){
+          sprintf(error_message, "[!]Array already defined in global scope : %s  -> ", name);
+          yyerror(error_message);
+     } 
+
+     if(numberOfElements > MAXARRAYSIZE)
+     {
+          yyerror("[!]Array size is too big");
+     }
+     strcpy(symbolTable[symbolTableIndex].type, type);
+     symbolTable[symbolTableIndex].typeOfObject=ARRAY;
+     symbolTable[symbolTableIndex].isConstant=0;
+     symbolTable[symbolTableIndex].scope=scope;
+     symbolTable[symbolTableIndex].vectorSize = numberOfElements;
+     
+     strcpy(symbolTable[symbolTableIndex].name, name);
+     if(strcmp(type, "char") == 0)
+     {    
+          symbolTable[symbolTableIndex].characterVector=(char*)malloc(numberOfElements*sizeof(char));
+        
+          for(int i=0 ;i <numberOfElements; i++)
+          {    
+               symbolTable[symbolTableIndex].characterVector[i]=' ';
+          }
+         
+     }
+     else if(strcmp(type, "int") == 0)
+     {
+          symbolTable[symbolTableIndex].integerVector=(int*)malloc(numberOfElements*sizeof(int));
+          for(int i=0 ;i <numberOfElements; i++)
+          {    
+               symbolTable[symbolTableIndex].integerVector[i]=0;
+          }
+          
+     }
+     else if(strcmp(type, "float") == 0)
+     {
+          symbolTable[symbolTableIndex].floatVector=(float*)malloc(numberOfElements*sizeof(float));
+           for(int i=0 ;i <numberOfElements; i++)
+          {    
+               symbolTable[symbolTableIndex].floatVector[i]=0.0;
+          }
+     }
+     else if(strcmp(type, "bool") == 0)
+     {
+          symbolTable[symbolTableIndex].booleanVector=(char**)malloc(numberOfElements*sizeof(char*));
+           for(int i=0 ;i <numberOfElements; i++)
+          {    
+               symbolTable[symbolTableIndex].booleanVector[i]=(char*)malloc(7*sizeof(char));
+               strcpy(symbolTable[symbolTableIndex].booleanVector[i],"NULL");
+          }
+     }
+     else if(strcmp(type, "string") == 0)
+     {
+          symbolTable[symbolTableIndex].stringVector=(char**)malloc(numberOfElements*sizeof(char*));
+          for(int i=0 ;i <numberOfElements; i++)
+          {    
+               symbolTable[symbolTableIndex].stringVector[i]=(char*)malloc(50*sizeof(char));
+               strcpy(symbolTable[symbolTableIndex].stringVector[i],"NULL");
+          }
+     }
+          symbolTableIndex++;
+          if(scope==0)
+          pushGlobalStack(name);
+          else
+          pushScopeStack(name);
+}
 void printInfo()
 {
      for( int i=0;i < symbolTableIndex;i++)
@@ -644,6 +797,26 @@ void printInfo()
                else if(strcmp(symbolTable[i].type, "string") == 0)
                {
                     printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].stringValue);
+               }
+          }
+          else if(symbolTable[i].typeOfObject == ARRAY)
+          {
+               printf("Array elements: ");
+               for(int j = 0; j < symbolTable[i].vectorSize; j++)
+               {
+                    printf("\'");
+                    if(strcmp(symbolTable[i].type, "char") == 0)
+                         printf("%c",symbolTable[i].characterVector[j]);
+                    else if(strcmp(symbolTable[i].type, "bool") == 0)
+                         printf("%s",symbolTable[i].booleanVector[j]);
+                    else if(strcmp(symbolTable[i].type, "int") == 0)
+                         printf("%d",symbolTable[i].integerVector[j]);
+                    else if(strcmp(symbolTable[i].type, "float") == 0)
+                         printf("%f",symbolTable[i].floatVector[j]);
+                    else if(strcmp(symbolTable[i].type, "string") == 0)
+                         printf("%s",symbolTable[i].stringVector[j]);
+                    
+                    printf("\'  ");
                }
           }
           
@@ -1137,6 +1310,14 @@ void updateParameterValue(struct information* info, int typeOfArgument)
           }
      }    
 }
+void verifyIfSymbolNameIsAVariable(const char* name){
+     char errorMsg[100];
+     struct symbol* temp2=lookUpElement(name);
+      if(temp2->typeOfObject == ARRAY || temp2 -> typeOfObject == FUNCTION || temp2 -> typeOfObject == _CLASS_) 
+      {   sprintf(errorMsg, "[!]Id [%s] is not a variable", name);
+          yyerror(errorMsg);
+      }
+}
 void verifyArgument(struct information* argument, int typeOfArgument, char* name){
 
      char errorMsg[100];
@@ -1160,22 +1341,28 @@ void verifyArgument(struct information* argument, int typeOfArgument, char* name
                sprintf(errorMsg, "[!]Function [%s] was not defined before", name);
                yyerror(errorMsg);
                }
+               else if(typeOfArgument == ARRAY)
+               {
+               sprintf(errorMsg, "[!]Array [%s] was not defined before", name);
+               yyerror(errorMsg);
+               }
           }  
      }
 
-
-     if(strcmp(calledFunction->parameters[currentParameterIndex++].info.type, argument->type) != 0)
+     
+     if(strcmp(calledFunction->parameters[currentParameterIndex].info.type, argument->type) != 0)
           {
-               sprintf(errorMsg, "[!]Argument [%d] has type [%s], but should have type [%s]", currentParameterIndex, argument->type, calledFunction->parameters[currentParameterIndex-1].info.type);
+               sprintf(errorMsg, "[!]Argument [%d] has type [%s], but should have type [%s]", currentParameterIndex, argument->type, calledFunction->parameters[currentParameterIndex].info.type);
                yyerror(errorMsg);
           }
      else{
-          printf("Argument [%d] is ok\n", currentParameterIndex-1);
+          printf("Argument [%d] is ok\n", currentParameterIndex);
           if(strcmp(argument->type, "int") == 0)
               {
-               calledFunction->parameters[currentParameterIndex++].info.intVal = argument->intVal;
+               calledFunction->parameters[currentParameterIndex].info.intVal = argument->intVal;
               }
      }
+    
 }
 
 void test(const char* name)
