@@ -1752,6 +1752,27 @@ void addInstanceToTable(const char* name, const char* className) {
                     strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].boolValue, symbolTable[i].boolValue);
                }
 
+               symbolTable[symbolTableIndex].numberOfParameters = symbolTable[i].numberOfParameters;
+               for (int j = 0; j < symbolTable[i].numberOfParameters; j++) {
+                    strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].name, symbolTable[i].parameters[j].name);
+                    strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].type, symbolTable[i].parameters[j].type);
+                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].isConstant = symbolTable[i].parameters[j].isConstant;
+                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].charValue = symbolTable[i].parameters[j].charValue;
+                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].intVal = symbolTable[i].parameters[j].intVal;
+                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].floatValue = symbolTable[i].parameters[j].floatValue;
+
+                    if (symbolTable[i].parameters[j].stringValue != NULL) {
+                         symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].stringValue = (char*)malloc(256*sizeof(char));
+                         strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].stringValue, symbolTable[i].parameters[j].stringValue);
+                    }
+
+                    if (symbolTable[i].parameters[j].boolValue != NULL) {
+                         symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].boolValue = (char*)malloc(7*sizeof(char));
+                         strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].boolValue, symbolTable[i].parameters[j].boolValue);
+                    }
+               }
+
+               
 
 
                /*
