@@ -2,7 +2,7 @@ class Foo {
     private int da = 2;
     public int tes = 3;
 
-    public int getDa() {
+    public int getDa(int b) {
         int buna = 2;
         return 2!
     }
@@ -11,5 +11,6 @@ class Foo {
 begin_progr {
     obj => Foo;
     int x = obj.tes;
+    int y = obj.getDa(2);
 }
 

@@ -298,14 +298,19 @@ expresii:  expresii MULTIPLICATION expresii {struct information *temp=(struct in
           | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
           | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
           | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
-          | ID '.' ID '(' lista_argumente ')'  //method call
+          | ID '.' ID '(' lista_argumente_2 ')' { struct information *temp=getInformationFromTable($3); $$=temp;} 
           | ID '[' NUMBER ']'  {struct information *temp= arrayValueAtIndex($1, $3); $$=temp;} // array at index NUMBER 
           | ID      {struct information *temp = getInformationFromTable($1);  verifyIfSymbolNameIsAVariable($1); $$=temp;} 
 
           ;
 //ifStatement
 
-
+lista_argumente_2 : lista_argumente_2 ',' argument
+                       | argument
+                       ;
+argument: 
+         | ID  
+         ;
 returnedvalue: ID { struct information *temp = getInformationFromTable($1); $$=temp;}
                | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;}
                | FLOAT {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;}
@@ -1756,79 +1761,9 @@ void addInstanceToTable(const char* name, const char* className) {
                symbolTable[symbolTableIndex].numberOfParameters = symbolTable[i].numberOfParameters;
                for (int j = 0; j < symbolTable[i].numberOfParameters; j++) {
                     strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].name, symbolTable[i].parameters[j].name);
-                    strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].type, symbolTable[i].parameters[j].type);
-                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].isConstant = symbolTable[i].parameters[j].isConstant;
-                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].charValue = symbolTable[i].parameters[j].charValue;
-                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].intVal = symbolTable[i].parameters[j].intVal;
-                    symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].floatValue = symbolTable[i].parameters[j].floatValue;
+                    strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].info.type, symbolTable[i].parameters[j].info.type);
 
-                    if (symbolTable[i].parameters[j].stringValue != NULL) {
-                         symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].stringValue = (char*)malloc(256*sizeof(char));
-                         strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].stringValue, symbolTable[i].parameters[j].stringValue);
-                    }
-
-                    if (symbolTable[i].parameters[j].boolValue != NULL) {
-                         symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].boolValue = (char*)malloc(7*sizeof(char));
-                         strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].boolValue, symbolTable[i].parameters[j].boolValue);
-                    }
                }
-
-               
-
-
-               /*
-                    struct objval {
-     char name[50];      // 
-     char type[30];      // 
-     int isConstant;     //
-
-     char charValue;
-     int intVal;
-     char** boolValue;
-     float floatValue;
-     char *stringValue;
-     int *integerVector;
-     char *characterVector;
-	char **stringVector;
-     int vectorSize;
-     
-     struct parameter parameters[MAXPARAMETERS];
-     int numberOfParameters;
-};
-
-
-
-struct symbol{
-     char name[50]; // 
-     char type[30];     //
-     int scope;    // 
-     int isConstant; //
-     int typeOfObject; // 1 var, 2 functie, 3 clasa, 4 membru de clasa, 5 array
-     char parrentClass[50];
-     int accessModifier;
-     char charValue;
-     int intVal;
-     char* boolValue;
-     float floatValue;
-     char *stringValue;
-     
-     int *integerVector;
-     char *characterVector;
-	char **stringVector;
-     float *floatVector;
-     char **booleanVector;
-     int vectorSize;
-     
-     struct parameter parameters[MAXPARAMETERS];
-     int numberOfParameters;
-
-     struct objval objValues[MAXSYMBOLS];
-     int numberOfObjValues;
-
-
-}symbolTable[MAXSYMBOLS];
-               */
-
 
 
                symbolTable[symbolTableIndex].numberOfObjValues++;
