@@ -85,7 +85,7 @@ struct symbol{
      int accessModifier;
      char charValue;
      int intVal;
-     char* boolValue;
+     char** boolValue;
      float floatValue;
      char *stringValue;
      int *integerVector;

@@ -1,27 +1,10 @@
+class Foo {
+    public int x = 2;
+    public int y = x;
+}
 
+begin_progr {
+    obj => Foo;
+    int a;
     
-int functiaVietii()
-{
-   
-    int k;
-    return 2!
 }
-
-int badas(int okkey){
-   
-  
-    okkey=20;
-
-    return okkey!
-}
-begin_progr{
-  
-    int okkey;
-    int wassabi; 
-    int da;
-    int cvv;
-    int altlaetl;
-    int bine=20;
-    int cv =badas(bine);
-}
-
