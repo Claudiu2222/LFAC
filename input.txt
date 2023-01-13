@@ -2,15 +2,31 @@ class Foo {
     private int da = 2;
     public int tes = 3;
 
-    public int getDa(int b) {
-        int buna = 2;
+    public int getDa(int b, int c) {
+        int buna = b;
+        return buna!
+    }
+
+    public int first(int x, int y) {
+        int ce = 2;
         return 2!
     }
+    public string second(char v, char y) {
+        char a = 'a';
+        return "buna"!
+    }
+
+}
+
+int func (int a, int b) {
+    int c = 2;
+    return c!
 }
 
 begin_progr {
     obj => Foo;
-    int x = obj.tes;
-    int y = obj.getDa(2);
+    int a = obj.getDa(2, 3);
+    int b = obj.first(obj.getDa(4, 3),3);
+    int c = func(2, 3);
 }
 

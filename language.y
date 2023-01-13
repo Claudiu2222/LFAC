@@ -192,6 +192,30 @@ void addInstanceToTable(const char* name, const char* className);
 struct information* getInformationFromInstance(const char* name, const char* prop);
 void addFunctionToTableFromClass(const char* name, const char* parrentClass);
 void addFunctionToInstantce(const char* name, const char* instance);
+
+// Argument System
+struct argument{
+     int nrOfArguments;
+     struct information* arguments[MAXPARAMETERS];
+}args[MAXSYMBOLS];
+args_index = -1;
+
+void init_new_args(){
+     args_index++;
+     args[args_index].nrOfArguments = 0;
+};
+
+void add_argument(struct information* info){
+     args[args_index].arguments[args[args_index].nrOfArguments] = info;
+     args[args_index].nrOfArguments++;
+};
+
+void delete_args(){
+     args_index--;
+};
+
+struct information* callFunctionClass(const char* name, const char* class);
+// ----
 %}
 
 %union {
@@ -296,21 +320,32 @@ expresii:  expresii MULTIPLICATION expresii {struct information *temp=(struct in
           | CHAR  {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); $$=temp;} 
           | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
+          
+          | ID '.' ID {init_new_args();} '(' lista_argumente_2 ')' {struct information *temp = callFunctionClass($3, $1); delete_args(); $$=temp; }    
+          
           | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
           | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
-          | ID '.' ID '(' lista_argumente_2 ')' { struct information *temp=getInformationFromTable($3); $$=temp;} 
           | ID '[' NUMBER ']'  {struct information *temp= arrayValueAtIndex($1, $3); $$=temp;} // array at index NUMBER 
           | ID      {struct information *temp = getInformationFromTable($1);  verifyIfSymbolNameIsAVariable($1); $$=temp;} 
-
+          
           ;
 //ifStatement
 
-lista_argumente_2 : lista_argumente_2 ',' argument
-                       | argument
-                       ;
-argument: 
-         | ID  
-         ;
+lista_argumente_2: /*epsilon*/ 
+               | lista_argumente_2 ',' argument
+               | argument
+               ;
+
+argument : NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); add_argument(temp);}
+         | ID '.' ID {init_new_args();} '(' lista_argumente_2 ')' {struct information *temp = callFunctionClass($3, $1); delete_args(); add_argument(temp); }     
+         | ID '(' lista_argumente ')' {struct information *temp=getInformationFromTable($1); add_argument(temp);}
+         | ID {struct information *temp = getInformationFromTable($1); add_argument(temp);}
+         | FLOAT {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); add_argument(temp);}
+         | STRING {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); add_argument(temp);}
+         | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); add_argument(temp);}
+         | CHAR {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->charVal=$1; strcpy(temp->type,_char); add_argument(temp);} 
+          ;
+
 returnedvalue: ID { struct information *temp = getInformationFromTable($1); $$=temp;}
                | NUMBER {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->intVal=$1; strcpy(temp->type,_int); $$=temp;}
                | FLOAT {struct information *temp=(struct information*)malloc(sizeof(struct information)); temp->floatVal=$1; strcpy(temp->type,_float); $$=temp;}
@@ -345,7 +380,7 @@ arg:  ID {verifyIfSymbolNameIsAVariable($1); if(currentParameterIndex  >= called
     ;
 
 /* bloc main */
-bloc : BEGIN_PR leftbracket list rightbracket  
+bloc : BEGIN_PR leftbracket {inFunction=0;} list rightbracket  
      ;
      
 if_statement: ELIF {inControlStatement++;} '('  expresii ')' leftbracket list rightbracket {inControlStatement--;} ELSE {inControlStatement++;} leftbracket list rightbracket {inControlStatement--;}  
@@ -503,7 +538,7 @@ int wasDefinedInCurrentScope(const char* name) {
                                    
                                   
                                    
-                              } else return 0;
+                              } 
                          }
                     }
                }
@@ -558,7 +593,10 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
      if(info!=NULL)
      {
           if(strcmp(info->type, type) != 0)
-               yyerror("[!]Type mismatch");
+          {
+               sprintf(error_message, "[!]Type mismatch, [expected: %s, found: %s]", type, info->type);
+               yyerror(error_message);
+          }
           if(strcmp(info->type, "char") == 0)
           {
                symbolTable[symbolTableIndex].charValue=info->charVal;
@@ -890,6 +928,15 @@ void printInfo()
                {
                     printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].stringValue);
                }
+
+               //
+
+               for (int j = 0; j < symbolTable[i].numberOfObjValues; j++)
+               {
+                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].objValues[j].name);
+                    printf("The number of parameters of [%s]:%d\n", symbolTable[i].name, symbolTable[i].objValues[j].numberOfParameters);
+               }
+              
           }
           else if(symbolTable[i].typeOfObject == ARRAY)
           {
@@ -909,6 +956,38 @@ void printInfo()
                          printf("%s",symbolTable[i].stringVector[j]);
                     
                     printf("\'  ");
+               }
+          } 
+          else if (symbolTable[i].typeOfObject == OBJECT) {
+               printf("Parrent class of symbol[%s]:%s\n", symbolTable[i].name, symbolTable[i].parrentClass);
+               printf("Access modifier of symbol[%s]:%d\n", symbolTable[i].name, symbolTable[i].accessModifier);
+                if(strcmp(symbolTable[i].type, "char") == 0)
+               {
+                    printf("The value of [%s]:%c\n", symbolTable[i].name, symbolTable[i].charValue);
+               }
+               else if(strcmp(symbolTable[i].type, "bool") == 0)
+               {
+                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].boolValue);
+               }
+               else if(strcmp(symbolTable[i].type, "int") == 0)
+               {
+                    printf("The value of [%s]:%d\n", symbolTable[i].name, symbolTable[i].intVal);
+               }
+               else if(strcmp(symbolTable[i].type, "float") == 0)
+               {
+                    printf("The value of [%s]:%f\n", symbolTable[i].name, symbolTable[i].floatValue);
+               }
+               else if(strcmp(symbolTable[i].type, "string") == 0)
+               {
+                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].stringValue);
+               }
+
+               //
+
+               for (int j = 0; j < symbolTable[i].numberOfObjValues; j++)
+               {
+                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].objValues[j].name);
+                    printf("The number of parameters of [%s]:%d\n", symbolTable[i].name, symbolTable[i].objValues[j].numberOfParameters);
                }
           }
           
@@ -1673,6 +1752,7 @@ void updateVariableToInstance(const char* name, const char* objName, struct info
                }
                if (strcmp(temp->objValues[i].type, info->type) != 0)
                {
+                    
                     sprintf(error_message, "[!]Type mismatch for variable [%s] of [%s] -> ", name, objName);
                     yyerror(error_message);
                }
@@ -1758,15 +1838,17 @@ void addInstanceToTable(const char* name, const char* className) {
                     strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].boolValue, symbolTable[i].boolValue);
                }
 
-               symbolTable[symbolTableIndex].numberOfParameters = symbolTable[i].numberOfParameters;
+               int numberofobjs = symbolTable[symbolTableIndex].numberOfObjValues;
+
+               symbolTable[symbolTableIndex].objValues[numberofobjs].numberOfParameters = symbolTable[i].numberOfParameters;
+
                for (int j = 0; j < symbolTable[i].numberOfParameters; j++) {
                     strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].name, symbolTable[i].parameters[j].name);
                     strcpy(symbolTable[symbolTableIndex].objValues[symbolTable[symbolTableIndex].numberOfObjValues].parameters[j].info.type, symbolTable[i].parameters[j].info.type);
-
                }
 
-
                symbolTable[symbolTableIndex].numberOfObjValues++;
+               
           }
      }
 
@@ -1778,5 +1860,53 @@ void addInstanceToTable(const char* name, const char* className) {
           pushGlobalStack(name);
      } else {
           pushScopeStack(name);
+     }
+}
+
+struct information* callFunctionClass(const char* name, const char* obj)
+{
+     // Search for the instance 
+     struct symbol* temp = lookUpElement(obj);
+
+     if (temp == NULL) {
+          char error_message[100];
+          sprintf(error_message, "[!]Instance %s not defined -> ", obj);
+          yyerror(error_message);
+     }
+
+     // Search for the function
+     for (int i = 0; i < temp->numberOfObjValues; i++) {
+          if (strcmp(temp->objValues[i].name, name) == 0) {
+               
+               int numberOfParameters = temp->objValues[i].numberOfParameters;
+               int numberOfArguments = args[args_index].nrOfArguments;
+
+               if (numberOfParameters != numberOfArguments) {
+                    char error_message[100];
+                    sprintf(error_message, "[!]Function %s has %d parameters, but %d were given for %s-> ", name, numberOfParameters, numberOfArguments);
+                    yyerror(error_message);
+               }
+
+               // Check if the parameters are the same
+               for (int j = 0; j < numberOfParameters; j++) {
+                    if (strcmp(temp->objValues[i].parameters[j].info.type, args[args_index].arguments[j]->type) != 0) {
+                         char error_message[100];
+                         sprintf(error_message, "[!]Function %s has %s as parameter %d, but %s was given -> ", obj, temp->objValues[i].parameters[j].info.type, j+1, args[args_index].arguments[j]->type);
+                         yyerror(error_message);
+                    }
+               }
+
+
+               // If everything is ok, return the type of the function and the value in a struct information
+               struct information* info = (struct information*)malloc(sizeof(struct information));
+               strcpy(info->type, temp->objValues[i].type);
+               info->charVal = temp->objValues[i].charValue;
+               info->floatVal = temp->objValues[i].floatValue;
+               info->intVal = temp->objValues[i].intVal;
+               strcpy(info->boolVal, temp->objValues[i].boolValue);
+               strcpy(info->strVal, temp->objValues[i].stringValue);
+
+               return info;
+          }
      }
 }
