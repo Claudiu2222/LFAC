@@ -5,18 +5,40 @@ class badum{
         return whatever!
     }
 }
-int functie()
+int functie(float abece)
 {
     int bb;
     return 1!
 }
+int functie2(int bb,int cc){
+    int b;
+    return 2!
+}
+float functie3(int bb,float cc){
+    int b;
+    return 2.2!
+}
+int functie4(string cv, int cdv){
+int ok;
+return 2!
+}
+int functie5(string cv, float dcv){
+int ok;
+return 2!
+}
 begin_progr {
 
+obk => badum;
 int d;
    for(int d=0;d<10;d++)
    {
        d=2;
        d=d+1;
    }
-   
+   float c;
+   int b;
+   float xd = functie3(functie5("BAD",2.2),functie3(functie2(200,b),2.2));
+    string ok="DA";
+  
+
 }
