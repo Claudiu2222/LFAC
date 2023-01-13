@@ -138,8 +138,9 @@ int inFunction;
 char currentFunction[50];
 int currentFunctionIndex;
 
-int currentParameterIndex;
-struct symbol* calledFunction;
+int currentParameterIndex[MAXSYMBOLS]; // <---
+int currentCalledFunctionIndex;
+struct symbol** calledFunction;
 void verifyArgumentExistence(struct information* argument, int typeOfArgument, char* name);
 
 int inControlStatement = 0;
@@ -246,7 +247,7 @@ declaratii : declaratii declaratie
 
 leftbracket: LEFTBRACKET {changeScope();}
            ;
-rightbracket: RIGHTBRACKET {revertScope();}
+rightbracket: RIGHTBRACKET {printStackValues();revertScope();}
             ;
 
 declaratie : declaratii_comune {printf("ies din declaratie\n");} 
@@ -301,7 +302,7 @@ expresii:  expresii MULTIPLICATION expresii {struct information *temp=(struct in
           | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
           | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
-          | ID  {currentParameterIndex=0; calledFunction=lookUpElement($1); if(calledFunction == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
+          | ID  {currentCalledFunctionIndex=0; currentParameterIndex[currentCalledFunctionIndex]=0; calledFunction[currentCalledFunctionIndex]=lookUpElement($1); if(calledFunction[currentCalledFunctionIndex] == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
           | ID '.' ID '(' lista_argumente_2 ')' { struct information *temp=getInformationFromTable($3); $$=temp;} 
           | ID '[' NUMBER ']'  {struct information *temp= arrayValueAtIndex($1, $3); $$=temp;} // array at index NUMBER 
           | ID      {struct information *temp = getInformationFromTable($1);  verifyIfSymbolNameIsAVariable($1); $$=temp;} 
@@ -331,9 +332,9 @@ lista_parametri : /*epsilon*/
 parametru : TYPE ID {struct parameter* temp = (struct parameter*)malloc(sizeof(struct parameter)); strcpy(temp->name,$2); strcpy(temp->info.type,$1); $$=temp;}
           ;            
 
-lista_argumente: /*epsilon*/ {if(currentParameterIndex < calledFunction->numberOfParameters){yyerror("[!] Not enough parameters");}};
-               | lista_argumente ',' arg {currentParameterIndex++; if(currentParameterIndex > calledFunction->numberOfParameters){yyerror("[!] Too many parameters");} verifyTypeOfArgument($3->type, calledFunction->parameters[currentParameterIndex-1].info.type);}
-               | arg {currentParameterIndex++; if(currentParameterIndex > calledFunction->numberOfParameters){yyerror("[!] Too many parameters");} verifyTypeOfArgument($1->type, calledFunction->parameters[currentParameterIndex-1].info.type);}
+lista_argumente: /*epsilon*/ {if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");}};
+               | lista_argumente ',' arg {currentParameterIndex[currentCalledFunctionIndex]++; if(currentParameterIndex[currentCalledFunctionIndex] > calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Too many parameters");} verifyTypeOfArgument($3->type, calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.type);}
+               | arg {currentParameterIndex[currentCalledFunctionIndex]++; if(currentParameterIndex[currentCalledFunctionIndex] > calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Too many parameters");} verifyTypeOfArgument($1->type, calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.type);}
                ;
 arg:      arg MULTIPLICATION arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_MULTIPLICATION); free($1); free($3); $$=temp;}
           | arg DIVISION arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_DIVISION); free($1); free($3); $$=temp;}
@@ -355,7 +356,7 @@ arg:      arg MULTIPLICATION arg {struct information *temp=(struct information*)
           | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
           | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
-          | ID  {struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, FUNCTION, $1); verifyIfSymbolNameIsAFunction($1); free($1); } '(' lista_argumente ')' { struct information *temp=getInformationFromTable($1); $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
+          | ID  {currentCalledFunctionIndex++; currentParameterIndex[currentCalledFunctionIndex]=0; calledFunction[currentCalledFunctionIndex]=lookUpElement($1); if(calledFunction[currentCalledFunctionIndex] == NULL){yyerror("[!] Function does not exist");}  struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, FUNCTION, $1); verifyIfSymbolNameIsAFunction($1); free($1); } '(' lista_argumente ')' {if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");} struct information *temp=getInformationFromTable($1); currentCalledFunctionIndex--; $$=temp;}      // aici am adaugat cam tot pt function calls, in prima parte imi cauta acel function si il salveaza in calledFunction  si in a doua parte ii  verific sa aiba verifica sa nu depaseasca nr de argumente + trimite mai departe acel pointer ca sa pot ii verific in regulile de erau undeva mai sus ca TIPUL RETURNAT DE FUNCTIE SA FIE EGAL CU TIPUL VARIABILEI MELE, si de asemenea se face un assign :) cum vezi in exemplu se face in fact atribuirea in variabila a stringului in primul exemplu din input.txt 
           | ID '.' ID '(' lista_argumente ')'  //method call
           | ID '[' NUMBER ']'  { verifyIfSymbolNameIsAnArray($1); struct information *temp= arrayValueAtIndex($1, $3);  $$=temp;} // array at index NUMBER 
           | ID      {struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, VARIABLE, $1); verifyIfSymbolNameIsAVariable($1);   $$=temp;} 
@@ -408,6 +409,9 @@ exit(1);
 int main(int argc, char** argv){
 initGlobalStack();
 initScopeStack();
+calledFunction = (struct symbol**)malloc(sizeof(struct symbol)* MAXSYMBOLS);
+for(int i = 0 ; i < MAXSYMBOLS; i++) 
+calledFunction[i] = (struct symbol*)malloc(sizeof(struct symbol));
 yyin=fopen(argv[1],"r");
 yyparse();
 printInfo();
@@ -533,7 +537,7 @@ int wasDefinedInCurrentScope(const char* name) {
                                    
                                   
                                    
-                              } else return 0;
+                              } 
                          }
                     }
                }
@@ -946,14 +950,14 @@ void printInfo()
 }
 void verifyTypeOfArgument(const char* argumentType, const char* parameterType){
 char errorMsg[100];
-if(calledFunction->numberOfParameters <= currentParameterIndex - 1)
+if(calledFunction[currentCalledFunctionIndex]->numberOfParameters <= currentParameterIndex[currentCalledFunctionIndex] - 1)
      {
-          sprintf(errorMsg, "[!]Too many arguments for function [%s]", calledFunction->name);
+          sprintf(errorMsg, "[!]Too many arguments for function [%s]", calledFunction[currentCalledFunctionIndex]->name);
           yyerror(errorMsg);
      }
 if(strcmp(parameterType, argumentType) != 0)
 {
-sprintf(errorMsg, "[!]Argument [%d] has type [%s], but should have type [%s]", currentParameterIndex, argumentType, parameterType);
+sprintf(errorMsg, "[!]Argument [%d] has type [%s], but should have type [%s]", currentParameterIndex[currentCalledFunctionIndex], argumentType, parameterType);
  yyerror(errorMsg);
  }
 }
@@ -1424,23 +1428,23 @@ void updateParameterValue(struct information* info, int typeOfArgument)
      {
           if(strcmp(info->type,"int")==0)
           {
-               calledFunction->parameters[currentParameterIndex-1].info.intVal = info->intVal;
+               calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.intVal = info->intVal;
           }
           else if(strcmp(info->type,"char")==0)
           {
-              calledFunction->parameters[currentParameterIndex-1].info.charVal = info->charVal;
+              calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.charVal = info->charVal;
           }
           else if(strcmp(info->type,"float")==0)
           {
-               calledFunction->parameters[currentParameterIndex-1].info.floatVal = info->floatVal;
+               calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.floatVal = info->floatVal;
           }
           else if(strcmp(info->type,"string")==0)
           {
-               strcpy(calledFunction->parameters[currentParameterIndex-1].info.strVal, info->strVal);
+               strcpy(calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.strVal, info->strVal);
           }
           else if(strcmp(info->type,"bool")==0)
           {
-               strcpy(calledFunction->parameters[currentParameterIndex-1].info.boolVal, info->boolVal);
+               strcpy(calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.boolVal, info->boolVal);
           }
      }    
 }
@@ -1508,7 +1512,7 @@ void verifyArgumentExistence(struct information* argument, int typeOfArgument, c
 
      char errorMsg[100];
      if(name != NULL)
-     {    //printStackValues();
+     {    
            if(wasDefinedInCurrentScope(name) == 0 && wasDefinedInGlobalScope(name) == 0) // daca e functie sau var trb sa si verific sa fi fost definite ca puteam sa fac int x = functie(ceva), chiar daca ceva nu era definit before
  
           {    
