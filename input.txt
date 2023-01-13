@@ -22,11 +22,18 @@ int func (int a, int b) {
     int c = 2;
     return c!
 }
+int functie(){
+    int kkk;
+    return 2!
+}
+int x;
 
 begin_progr {
-    obj => Foo;
-    int a = obj.getDa(2, 3);
-    int b = obj.first(obj.getDa(4, 3),3);
-    int c = func(2, 3);
+
+    float nai;
+    float nai2;
+    int b;
+    int[99] d;
+    int cv=ceva(functie());
 }
 
