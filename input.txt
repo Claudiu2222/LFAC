@@ -1,28 +1,22 @@
-int ceva(int d){
-   int bro;
-    int x;float nai;
-    return 2!
-    
-    
+class badum{
+    public int d;
+    public int notGood(){
+        int whatever;
+        return whatever!
+    }
 }
-int functie(){
-    int kkk;
-    return 2!
+int functie()
+{
+    int bb;
+    return 1!
 }
-float functieMegaEnervanta(int mue, string idgaf){
-    int whatever;
-    return 30.2!
-}
-int x;
-
 begin_progr {
 
-    float nai;
-    float nai2;
-    string da ="BR";
-
- 
-    int bro;
-    int cevsa= ceva(functieMegaEnervanta(23+2,"BRO"));
+int d;
+   for(int d=0;d<10;d++)
+   {
+       d=2;
+       d=d+1;
+   }
+   
 }
-
