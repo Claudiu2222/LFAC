@@ -127,73 +127,91 @@ struct symbol{
 
 }symbolTable[MAXSYMBOLS];
 
+int inFunction; // Parameter checking
+
+// -- Function call system
+char currentFunction[50];
+int currentFunctionIndex;
+
+int currentParameterIndex[MAXSYMBOLS]; 
+int currentCalledFunctionIndex;
+struct symbol** calledFunction;
+void verifyArgumentExistence(struct information* argument, int typeOfArgument, char* name);
+void addParameterToFunction(struct symbol* functie, struct parameter* param);
+void addFunctionToTable(char* type, char *name,  int scope);
+void verifyTypeOfArgument(const char* argumentType, const char* parameterType);
+int inControlStatement = 0;
+
+// -- Class system
+int inClass = 0;
+char currentClass[50];
+char accesModifier[10];
+
+// -- Array system
+struct information* arrayValueAtIndex(const char* name, int index);
+void updateArrayValue(const char* name, int index, struct information* info);
+
+// -- Expressions operations
+void add(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void subtract(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void multiply(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void divide(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void lessThan(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void lessOrEqualThan(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void greaterThan(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void greaterOrEqualThan(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void equal(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void unaryNegation(struct information* finalExp, struct information* leftExp);
+void negation(struct information* finalExp, struct information* leftExp);
+void and(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void or(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void calculate(struct information* finalExp, struct information* leftExp, struct information* rightExp, int typeOfOperation);
+void verifyTypes(struct information* finalExp, struct information* leftExp, struct information* rightExp);
+void eval(struct information* expression);
+
+
+void updateVariable(const char* name, struct information* info);
+void updateVariableToInstance(const char* name, const char* className, struct information* info);
+
+// -- Symbol Table system
+struct symbol* lookUpElement(const char* name);
+void addClassToTable(const char* name);
+void addArrayToTable(const char* type, int numberOfElements, const char* name, int scope);
+void addInstanceToTable(const char* name, const char* className);
+void addVariableToTable(char *name, char* type, int scope, int isConstant, struct information *info );
+void printInfo();
+struct information* getInformationFromTable(const char* name);
+
+int returnTypeOfObject(const char* name);
+void verifyIfSymbolNameIsAVariable(const char* name);
+void verifyIfSymbolNameIsAFunction(const char* name);
+void verifyIfSymbolNameIsAnArray(const char* name);
+
+
+// -- Scope System
 int scope = 0;
 int last_scope = -1;
 int diffScope = 0;
 char* scopeStack[MAXSYMBOLS];
 char* globalStack[MAXSYMBOLS];
 int symbolTableIndex = 0;
-
-int inFunction;
-char currentFunction[50];
-int currentFunctionIndex;
-
-int currentParameterIndex[MAXSYMBOLS]; // <---
-int currentCalledFunctionIndex;
-struct symbol** calledFunction;
-void verifyArgumentExistence(struct information* argument, int typeOfArgument, char* name);
-
-int inControlStatement = 0;
-
-int inClass = 0;
-char currentClass[50];
-char accesModifier[10];
-
-struct information* arrayValueAtIndex(const char* name, int index);
-
-void addParameterToFunction(struct symbol* functie, struct parameter* param);
-void addFunctionToTable(char* type, char *name,  int scope);
-void addVariableToTable(char *name, char* type, int scope, int isConstant, struct information *info );
-void addArrayToTable(const char* type, int numberOfElements, const char* name, int scope);
-void addVariableFromSymToTable(char *name, char* type, int scope, int isConstant, const char* symbol_name);
-void printInfo();
-void initializeStack();
-void pushScope();
-void popScope();
-void add(struct information* finalExp, struct information* leftExp, struct information* rightExp);
-void subtract(struct information* finalExp, struct information* leftExp, struct information* rightExp);
-void multiply(struct information* finalExp, struct information* leftExp, struct information* rightExp);
-void divide(struct information* finalExp, struct information* leftExp, struct information* rightExp);
-void calculate(struct information* finalExp, struct information* leftExp, struct information* rightExp, int typeOfOperation);
-void verifyTypeOfArgument(const char* argumentType, const char* parameterType);
-void eval(struct information* expression);
-void verifyTypes(struct information* finalExp, struct information* leftExp, struct information* rightExp);
-void showStack();
-void updateVariable(const char* name, struct information* info);
-void updateVariableToInstance(const char* name, const char* className, struct information* info);
-struct symbol* lookUpElement(const char* name);
-int returnTypeOfObject(const char* name);
-void addClass(const char* name);
-void verifyIfSymbolNameIsAVariable(const char* name);
-void verifyIfSymbolNameIsAFunction(const char* name);
-void verifyIfSymbolNameIsAnArray(const char* name);
-
-// Scope System
 void initGlobalStack();
 void initScopeStack();
 void pushGlobalStack(const char* name);
-void pushScopeStack();
+void pushScopeStack(const char* name);
 void deleteElementsFromScopeStack();
 void changeScope();
 void revertScope();
-void printStackValues();
-void test(const char* name);
 int wasDefinedInGlobalScope(const char* name);
 int wasDefinedInCurrentScope(const char* name);
-void updateArrayValue(const char* name, int index, struct information* info);
+
+void printStackValues();
+void test(const char* name);
+
+
+
 // ---- 
-struct information* getInformationFromTable(const char* name);
-void addInstanceToTable(const char* name, const char* className);
+
 struct information* getInformationFromInstance(const char* name, const char* prop);
 void addFunctionToTableFromClass(const char* name, const char* parrentClass);
 void addFunctionToInstantce(const char* name, const char* instance);
@@ -278,7 +296,7 @@ rightbracket: RIGHTBRACKET {revertScope();}
 
 declaratie : declaratii_comune {printf("ies din declaratie\n");} 
            | TYPE ID {inFunction=1; addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);inFunction=0;} rightbracket //function
-           | CLASS ID {strcpy(currentClass, $2); inClass = 1;} leftbracket class_decs rightbracket {addClass($2); inClass = 0;}   
+           | CLASS ID {strcpy(currentClass, $2); inClass = 1;} leftbracket class_decs rightbracket {addClassToTable($2); inClass = 0;}   
            ; 
 
 class_decs : class_decs class_dec
@@ -617,7 +635,6 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
      //printf("info boolVal: %s\n", info->boolVal);
      //printf("info charVal: %s\n", info->charVal);
      
-
      // Verificam daca variabila nu se afla in unul din scope-urile parinte
      char error_message[100];
 
@@ -683,7 +700,7 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
           pushScopeStack(name);
      }
 
-     // If we are in a calss, we need to specify other information precum 
+     // If we are in a class, we need to specify other information such as 
      if (inClass == 1) {
           strcpy(symbolTable[symbolTableIndex].parrentClass, currentClass);
           symbolTable[symbolTableIndex].typeOfObject = CLASSMEMBER;
@@ -696,17 +713,7 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
           }
      }
      symbolTableIndex++;
-          //printf("new simbol added to table\n===\n");
-          //// Print the symbol data
-          //printf("name : %s\n", symbolTable[symbolTableIndex-1].name);
-          //printf("type : %s\n", symbolTable[symbolTableIndex-1].type);
-          //printf("scope : %d\n", symbolTable[symbolTableIndex-1].scope);
-          //printf("isConstant : %d\n", symbolTable[symbolTableIndex-1].isConstant);
-          //printf("int value : %d\n", symbolTable[symbolTableIndex-1].intVal);
-          //printf("float value : %f\n", symbolTable[symbolTableIndex-1].floatValue);
-          //printf("char value : %s\n", symbolTable[symbolTableIndex-1].charValue);
-          //printf("bool value : %s\n", symbolTable[symbolTableIndex-1].boolValue);
-          //printf("string value : %s\n", symbolTable[symbolTableIndex-1].stringValue);
+  
 
 }
 void addFunctionToTable( char* functionType, char *functionName, int scope){
@@ -1845,7 +1852,7 @@ void updateVariableToInstance(const char* name, const char* objName, struct info
      
 }
 
-void addClass(const char* name)
+void addClassToTable(const char* name)
 {
      // Cautam daca numele a fost folosi pe global deja 
      if (wasDefinedInGlobalScope(name) == 1) {
