@@ -1,44 +1,69 @@
-class badum{
-    public int d;
-    public int notGood(){
-        int whatever;
-        return whatever!
+class classTest{
+    public int a;
+    private int b;
+
+    public int method1Test(int par1, int par2){
+        int cv = 2;
+        return cv!
+    }
+     private int method2Test(int par1, int par2){
+        int altcv = 2;
+        return altcv!
     }
 }
-int functie(float abece)
-{
-    int bb;
-    return 1!
-}
-int functie2(int bb,int cc){
-    int b;
-    return 2!
-}
-float functie3(int bb,float cc){
-    int b;
-    return 2.2!
-}
-int functie4(string cv, int cdv){
-int ok;
-return 2!
-}
-int functie5(string cv, float dcv){
-int ok;
-return 2!
-}
-begin_progr {
 
-obk => badum;
-int d;
-   for(int d=0;d<10;d++)
-   {
-       d=2;
-       d=d+1;
+
+bool functie1(){
+    bool var1 = true && (false || true);
+    return var1!
+}
+char functie2(int par1){
+    char var1 = 'a';
+    return var1!
+}
+int functie3(int par1, bool par2, char par3){
+    int bad;
+    return 33!
+}
+
+begin_progr{
+   
+   string[20] array2;
+   array2[3] = "TEST";
+   int var1 = 300;
+   float var2 = 40.0;
+   int[10] array1;
+   array1[2] = 20;
+   EVAL(var1+array1[2]);
+   TYPEOF(var1 + 499);
+
+   obj => classTest;
+   obj.a = 20;
+
+   int xx = obj.method1Test(2,3);
+ 
+   int ok = functie3(obj.method1Test(23,2323),functie1(),functie2(var1));
+   const int var4=30;
+   if(ok == 0){
+    int teste;
    }
-   float c;
-   int b;
-   float xd = functie3(functie5("BAD",2.2),functie3(functie2(200,b),2.2));
-    string ok="DA";
+   int teste;
   
-
+   for(var1 = 30; var1 < 50; var1++){
+    while(var1 > 20){
+       
+        if(true || false && (32>1))
+        {
+            int testt;
+        }
+        if( false == true){
+            int testt;
+        }
+        int testt;
+    }
+    int testt;
+   }
+   
+  
+   
 }

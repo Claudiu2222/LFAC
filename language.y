@@ -117,6 +117,11 @@ struct symbol{
      float *floatVector;
      char **booleanVector;
      int vectorSize;
+
+     int ifID;
+     int whileID;
+     int forID;
+     int scopeStatement;
      
      struct parameter parameters[MAXPARAMETERS];
      int numberOfParameters;
@@ -140,7 +145,6 @@ void verifyArgumentExistence(struct information* argument, int typeOfArgument, c
 void addParameterToFunction(struct symbol* functie, struct parameter* param);
 void addFunctionToTable(char* type, char *name,  int scope);
 void verifyTypeOfArgument(const char* argumentType, const char* parameterType);
-int inControlStatement = 0;
 
 // -- Class system
 int inClass = 0;
@@ -192,6 +196,12 @@ void verifyIfSymbolNameIsAnArray(const char* name);
 int scope = 0;
 int last_scope = -1;
 int diffScope = 0;
+//
+int ifID = 0;
+int whileID = 0;
+int forID = 0;
+int scopeStatement = 0;
+// 
 char* scopeStack[MAXSYMBOLS];
 char* globalStack[MAXSYMBOLS];
 int symbolTableIndex = 0;
@@ -280,7 +290,7 @@ struct information* callFunctionClass(const char* name, const char* class);
 
 
 %%
-progr: declaratii bloc  {printf("program corect sintactic\n");}
+progr: declaratii bloc  {printf("Compiled succesfully!\n");}
      ;
  
 declaratii : declaratii declaratie
@@ -294,7 +304,7 @@ leftbracket: LEFTBRACKET {changeScope();}
 rightbracket: RIGHTBRACKET {revertScope();}
             ;
 
-declaratie : declaratii_comune {printf("ies din declaratie\n");} 
+declaratie : declaratii_comune 
            | TYPE ID {inFunction=1; addFunctionToTable($1, $2, scope); strcpy(currentFunction, $2); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($11->type,$1)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($2,$11); free($11);inFunction=0;} rightbracket //function
            | CLASS ID {strcpy(currentClass, $2); inClass = 1;} leftbracket class_decs rightbracket {addClassToTable($2); inClass = 0;}   
            ; 
@@ -308,7 +318,6 @@ class_dec : ACCESSMODIFIER TYPE ID ';' {strcpy(accesModifier, $1); addVariableTo
           | ACCESSMODIFIER TYPE '[' NUMBER ']' ID ';' // array
           | ACCESSMODIFIER TYPE ID '[' NUMBER ']' ASSIGN expresii ';' {free($8);}// array at index NUMBER = assignedValue
           | ACCESSMODIFIER CONSTANT TYPE ID ASSIGN expresii ';' {strcpy(accesModifier, $1); addVariableToTable($4, $3, scope, CCONSTANT , $6); free($6);}
-          | ACCESSMODIFIER TYPE ID '(' lista_parametri ')' leftbracket list RETURN returnedvalue NEGATION rightbracket {addFunctionToTable($2, $3, scope); strcpy(currentFunction, $3); currentFunctionIndex=symbolTableIndex-1; inFunction=0;} //function
           | ACCESSMODIFIER TYPE ID {inFunction=1; strcpy(accesModifier, $1); addFunctionToTable($2, $3, scope); strcpy(currentFunction, $3); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($12->type,$2)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($3,$12); free($12);inFunction=0;} rightbracket //function
           ;
 
@@ -389,7 +398,7 @@ parametru : TYPE ID {struct parameter* temp = (struct parameter*)malloc(sizeof(s
 
 lista_argumente: /*epsilon*/ {if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");}};
                | lista_argumente ',' arg {currentParameterIndex[currentCalledFunctionIndex]++; if(currentParameterIndex[currentCalledFunctionIndex] > calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Too many parameters");} verifyTypeOfArgument($3->type, calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.type); $$ = $3;}
-               | arg {currentParameterIndex[currentCalledFunctionIndex]++; if(currentParameterIndex[currentCalledFunctionIndex] > calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Too many parameters");} verifyTypeOfArgument($1->type, calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.type); printf("\n\n--%s--\n\n",$1->type);$$=$1;}
+               | arg {currentParameterIndex[currentCalledFunctionIndex]++; if(currentParameterIndex[currentCalledFunctionIndex] > calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Too many parameters");} verifyTypeOfArgument($1->type, calledFunction[currentCalledFunctionIndex]->parameters[currentParameterIndex[currentCalledFunctionIndex]-1].info.type); $$=$1;}
                ;
 arg:      arg MULTIPLICATION arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_MULTIPLICATION); free($1); free($3); $$=temp;}
           | arg DIVISION arg {struct information *temp=(struct information*)malloc(sizeof(struct information)); calculate(temp, $1, $3, OP_DIVISION); free($1); free($3); $$=temp;}
@@ -411,7 +420,7 @@ arg:      arg MULTIPLICATION arg {struct information *temp=(struct information*)
           | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
           | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
-          | ID  {currentCalledFunctionIndex++; currentParameterIndex[currentCalledFunctionIndex]=0; calledFunction[currentCalledFunctionIndex]=lookUpElement($1); if(calledFunction[currentCalledFunctionIndex] == NULL){yyerror("[!] Function does not exist"); }  struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, FUNCTION, $1); verifyIfSymbolNameIsAFunction($1); free($1); } '(' lista_argumente ')' {if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");} struct information *temp=getInformationFromTable(calledFunction[currentCalledFunctionIndex]->name); currentCalledFunctionIndex--; $$=temp;} 
+/*fct*/   | ID  {currentCalledFunctionIndex++; currentParameterIndex[currentCalledFunctionIndex]=0; calledFunction[currentCalledFunctionIndex]=lookUpElement($1); if(calledFunction[currentCalledFunctionIndex] == NULL){yyerror("[!] Function does not exist"); }  struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, FUNCTION, $1); verifyIfSymbolNameIsAFunction($1); free($1); } '(' lista_argumente ')' {if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");} struct information *temp=getInformationFromTable(calledFunction[currentCalledFunctionIndex]->name); currentCalledFunctionIndex--; $$=temp;} 
           | ID '.' ID {init_new_args();} '(' lista_argumente_2 ')' {struct information *temp = callFunctionClass($3, $1); delete_args(); $$=temp; }    
           | ID '[' NUMBER ']'  { verifyIfSymbolNameIsAnArray($1); struct information *temp= arrayValueAtIndex($1, $3);  $$=temp;} // array at index NUMBER 
           | ID      {struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, VARIABLE, $1); verifyIfSymbolNameIsAVariable($1);   $$=temp;} 
@@ -422,24 +431,24 @@ arg:      arg MULTIPLICATION arg {struct information *temp=(struct information*)
 bloc : BEGIN_PR leftbracket {inFunction=0;} list rightbracket  
      ;
      
-if_statement: ELIF {inControlStatement++;} '('  expresii ')' leftbracket list rightbracket {inControlStatement--;} ELSE {inControlStatement++;} leftbracket list rightbracket {inControlStatement--;}  
-           | IF {inControlStatement++;} '('  expresii ')' leftbracket list rightbracket {inControlStatement--;} 
+if_statement: ELIF  { ifID++;}'('  expresii ')' leftbracket list rightbracket {ifID--;}  ELSE   { ifID++;}leftbracket list rightbracket {ifID--;}
+           | IF { ifID++;} '('  expresii ')' leftbracket list rightbracket {ifID--;} 
              ;
-while_statement: WHILE '('  expresii_booleene ')' leftbracket list rightbracket 
+while_statement: WHILE {whileID++;} '('  expresii_booleene ')' leftbracket list rightbracket {whileID--;}
               ;
-for_statement: FOR '(' TYPE ID ASSIGN NUMBER ';' expresii_booleene ';'  ID PLUS PLUS ')' leftbracket list rightbracket 
+for_statement: FOR {forID++;} '(' ID ASSIGN NUMBER ';' expresii_booleene ';'  ID PLUS PLUS ')' leftbracket list rightbracket {forID--;}
              ;
 /* lista instructiuni (pt main)*/
-list :  statement 
-     | list statement 
+list :  statement {if(scope == diffScope){scopeStatement = 0;}}
+     | list statement {if(scope == diffScope){scopeStatement = 0;}}
      ;
 
 /* instructiune */
 statement: declaratii_comune		 
          | ID '(' lista_apel ')' ';'
-         | if_statement
-         | for_statement
-         | while_statement
+         | {scopeStatement++;}if_statement
+         | {scopeStatement++;}for_statement
+         | {scopeStatement++;}while_statement
          | TYPEOF '(' expresii ')' ';' { printf("The type of the expression you have written is: %s\n",$3->type);free($3);}
          | EVAL '(' expresii ')' ';' {eval($3); free($3);}
          ;
@@ -608,10 +617,18 @@ int wasDefinedInCurrentScope(const char* name) {
                               if(symbolTable[j].scope >= diffScope)
                               {
                                    
+                                   if (symbolTable[j].ifID == ifID && symbolTable[j].whileID == whileID && symbolTable[j].forID == forID && symbolTable[j].scopeStatement == scopeStatement)
                                         return 1;
                                    
-                                  
-                                   
+                                   if (symbolTable[j].ifID < ifID || symbolTable[j].whileID < whileID || symbolTable[j].forID < forID)
+                                        return 1;
+
+                                   // Suntem in scop comun, adica scop de functie
+                                   //if(symbolTable[j].ifID < ifID || symbolTable[j].whileID < whileID || symbolTable[j].forID < forID)
+                                   //    return 1;
+                                   //if (symbolTable[j].ifID == 0 || symbolTable[j].whileID == 0 || symbolTable[j].forID == 0)
+                                   //     return 1;
+                                   //else return 0;
                               } 
                          }
                     }
@@ -657,12 +674,18 @@ void addVariableToTable(char *name, char* type, int scope, int isConstant, struc
           }
      }
 
+
+
      // continuam cu adaugarea in tabela de simboluri
      strcpy(symbolTable[symbolTableIndex].name,name);
      strcpy(symbolTable[symbolTableIndex].type,type);
      symbolTable[symbolTableIndex].scope=scope;
      symbolTable[symbolTableIndex].isConstant=isConstant;
      symbolTable[symbolTableIndex].typeOfObject=VARIABLE;
+     symbolTable[symbolTableIndex].ifID = ifID;
+     symbolTable[symbolTableIndex].whileID = whileID;
+     symbolTable[symbolTableIndex].forID = forID;
+     symbolTable[symbolTableIndex].scopeStatement = scopeStatement;
      if(info!=NULL)
      {
           if(strcmp(info->type, type) != 0)
@@ -901,160 +924,179 @@ void addArrayToTable(const char* type, int numberOfElements, const char* name, i
           pushScopeStack(name);
 }
 void printInfo()
-{
+{         FILE* f1 = fopen("symbol_table.txt", "w");
+          FILE* f2 = fopen("symbol_table_functions.txt", "w");
+          FILE* temp;
      for( int i=0;i < symbolTableIndex;i++)
      {
-          printf("=================================\n");
-          printf("Name of symbol[%d]:%s\n", i, symbolTable[i].name);
-          printf("Type of symbol[%d]:%s\n", i, symbolTable[i].type);
-          printf("Scope of symbol[%d]:%d\n", i, symbolTable[i].scope);
-        
-          printf("Type of object of symbol[%d]:%d\n", i, symbolTable[i].typeOfObject);
+          
+          if(symbolTable[i].typeOfObject == FUNCTION)
+          {
+               temp = f2;
+          }
+          else{
+               temp = f1;
+          }
+          fprintf(temp,"=================================\n");
+          fprintf(temp,"Name of symbol[%d]:%s\n", i, symbolTable[i].name);
+          fprintf(temp,"Type of symbol[%d]:%s\n", i, symbolTable[i].type);
+          fprintf(temp,"Scope of symbol[%d]:%d\n", i, symbolTable[i].scope);
+
+          fprintf(temp,"IFID of symbol[%d]:%d\n", i, symbolTable[i].ifID);
+          fprintf(temp,"FORID of symbol[%d]:%d\n", i, symbolTable[i].forID);
+          fprintf(temp,"WHILEID of symbol[%d]:%d\n", i, symbolTable[i].whileID);
+          fprintf(temp,"Scope Statement of symbol[%d]:%d\n", i, symbolTable[i].scopeStatement);
+
+
+          fprintf(temp,"Type of object of symbol[%d]:%d\n", i, symbolTable[i].typeOfObject);
           if(symbolTable[i].typeOfObject == VARIABLE)
           {  
-               printf("Is constant of symbol[%d]:%d\n", i, symbolTable[i].isConstant);
+               fprintf(temp,"Is constant of symbol[%d]:%d\n", i, symbolTable[i].isConstant);
                if(strcmp(symbolTable[i].type, "char") == 0)
                {
-                    printf("Value of symbol[%d]:%c\n", i, symbolTable[i].charValue);
+                    fprintf(temp,"Value of symbol[%d]:%c\n", i, symbolTable[i].charValue);
                }
                else if(strcmp(symbolTable[i].type, "bool") == 0)
                {
-                    printf("Value of symbol[%d]:%s\n", i, symbolTable[i].boolValue);
+                    fprintf(temp,"Value of symbol[%d]:%s\n", i, symbolTable[i].boolValue);
                }
                else if(strcmp(symbolTable[i].type, "int") == 0)
                {
-                    printf("Value of symbol[%d]:%d\n", i, symbolTable[i].intVal);
+                    fprintf(temp,"Value of symbol[%d]:%d\n", i, symbolTable[i].intVal);
                }
                else if(strcmp(symbolTable[i].type, "float") == 0)
                {
-                    printf("Value of symbol[%d]:%f\n", i, symbolTable[i].floatValue);
+                    fprintf(temp,"Value of symbol[%d]:%f\n", i, symbolTable[i].floatValue);
                }
                else if(strcmp(symbolTable[i].type, "string") == 0)
                {
-                    printf("Value of symbol[%d]:%s\n", i, symbolTable[i].stringValue);
+                    fprintf(temp,"Value of symbol[%d]:%s\n", i, symbolTable[i].stringValue);
                }
           }
           else if(symbolTable[i].typeOfObject == FUNCTION)
           {
-               printf("Number of parameters of symbol[%d]:%d\n", i, symbolTable[i].numberOfParameters);
+               fprintf(temp,"Number of parameters of symbol[%d]:%d\n", i, symbolTable[i].numberOfParameters);
                 if(strcmp(symbolTable[i].type, "char") == 0)
                {
-                    printf("Returned value of function[%d]:%c\n", i, symbolTable[i].charValue);
+                    fprintf(temp,"Returned value of function[%d]:%c\n", i, symbolTable[i].charValue);
                }
                else if(strcmp(symbolTable[i].type, "bool") == 0)
                {
-                    printf("Returned value of function[%d]:%s\n", i, symbolTable[i].boolValue);
+                    fprintf(temp,"Returned value of function[%d]:%s\n", i, symbolTable[i].boolValue);
                }
                else if(strcmp(symbolTable[i].type, "int") == 0)
                {
-                    printf("Returned value of function[%d]:%d\n", i, symbolTable[i].intVal);
+                    fprintf(temp,"Returned value of function[%d]:%d\n", i, symbolTable[i].intVal);
                }
                else if(strcmp(symbolTable[i].type, "float") == 0)
                {
-                    printf("Returned value of function[%d]:%f\n", i, symbolTable[i].floatValue);
+                    fprintf(temp,"Returned value of function[%d]:%f\n", i, symbolTable[i].floatValue);
                }
                else if(strcmp(symbolTable[i].type, "string") == 0)
                {
-                    printf("Returned value of function[%d]:%s\n", i, symbolTable[i].stringValue);
+                    fprintf(temp,"Returned value of function[%d]:%s\n", i, symbolTable[i].stringValue);
                }
                for(int j=0; j<symbolTable[i].numberOfParameters; j++)
                {
-                    printf("--->Name of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].name);
-                    printf("--->Type of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].info.type);
+                    fprintf(temp,"--->Name of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].name);
+                   fprintf(temp,"--->Type of parameter[%d]:%s\n", j, symbolTable[i].parameters[j].info.type);
                }
           }
           else if (symbolTable[i].typeOfObject == _CLASS_)
           {
-               printf("%s is a class! \n", symbolTable[i].name);
+               fprintf(temp,"%s is a class! \n", symbolTable[i].name);
           }
           else if (symbolTable[i].typeOfObject == CLASSMEMBER)
           {
-               printf("Parrent class of symbol[%s]:%s\n", symbolTable[i].name, symbolTable[i].parrentClass);
-               printf("Access modifier of symbol[%s]:%d\n", symbolTable[i].name, symbolTable[i].accessModifier);
+               fprintf(temp,"Parrent class of symbol[%s]:%s\n", symbolTable[i].name, symbolTable[i].parrentClass);
+               fprintf(temp,"Access modifier of symbol[%s]:%d\n", symbolTable[i].name, symbolTable[i].accessModifier);
                 if(strcmp(symbolTable[i].type, "char") == 0)
                {
-                    printf("The value of [%s]:%c\n", symbolTable[i].name, symbolTable[i].charValue);
+                    fprintf(temp,"The value of [%s]:%c\n", symbolTable[i].name, symbolTable[i].charValue);
                }
                else if(strcmp(symbolTable[i].type, "bool") == 0)
                {
-                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].boolValue);
+                    fprintf(temp,"The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].boolValue);
                }
                else if(strcmp(symbolTable[i].type, "int") == 0)
                {
-                    printf("The value of [%s]:%d\n", symbolTable[i].name, symbolTable[i].intVal);
+                    fprintf(temp,"The value of [%s]:%d\n", symbolTable[i].name, symbolTable[i].intVal);
                }
                else if(strcmp(symbolTable[i].type, "float") == 0)
                {
-                    printf("The value of [%s]:%f\n", symbolTable[i].name, symbolTable[i].floatValue);
+                    fprintf(temp,"The value of [%s]:%f\n", symbolTable[i].name, symbolTable[i].floatValue);
                }
                else if(strcmp(symbolTable[i].type, "string") == 0)
                {
-                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].stringValue);
+                    fprintf(temp,"The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].stringValue);
                }
 
                //
 
                for (int j = 0; j < symbolTable[i].numberOfObjValues; j++)
                {
-                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].objValues[j].name);
-                    printf("The number of parameters of [%s]:%d\n", symbolTable[i].name, symbolTable[i].objValues[j].numberOfParameters);
+                    fprintf(temp,"The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].objValues[j].name);
+                    fprintf(temp,"The number of parameters of [%s]:%d\n", symbolTable[i].name, symbolTable[i].objValues[j].numberOfParameters);
                }
               
           }
           else if(symbolTable[i].typeOfObject == ARRAY)
           {
-               printf("Array elements: ");
+               fprintf(temp,"Array elements: ");
                for(int j = 0; j < symbolTable[i].vectorSize; j++)
                {
-                    printf("\'");
+                    fprintf(temp,"\'");
                     if(strcmp(symbolTable[i].type, "char") == 0)
-                         printf("%c",symbolTable[i].characterVector[j]);
+                         fprintf(temp,"%c",symbolTable[i].characterVector[j]);
                     else if(strcmp(symbolTable[i].type, "bool") == 0)
-                         printf("%s",symbolTable[i].booleanVector[j]);
+                         fprintf(temp,"%s",symbolTable[i].booleanVector[j]);
                     else if(strcmp(symbolTable[i].type, "int") == 0)
-                         printf("%d",symbolTable[i].integerVector[j]);
+                         fprintf(temp,"%d",symbolTable[i].integerVector[j]);
                     else if(strcmp(symbolTable[i].type, "float") == 0)
-                         printf("%f",symbolTable[i].floatVector[j]);
+                         fprintf(temp,"%f",symbolTable[i].floatVector[j]);
                     else if(strcmp(symbolTable[i].type, "string") == 0)
-                         printf("%s",symbolTable[i].stringVector[j]);
+                         fprintf(temp,"%s",symbolTable[i].stringVector[j]);
                     
-                    printf("\'  ");
+                    fprintf(temp,"\'  ");
                }
           } 
           else if (symbolTable[i].typeOfObject == OBJECT) {
-               printf("Parrent class of symbol[%s]:%s\n", symbolTable[i].name, symbolTable[i].parrentClass);
-               printf("Access modifier of symbol[%s]:%d\n", symbolTable[i].name, symbolTable[i].accessModifier);
+               fprintf(temp,"Parrent class of symbol[%s]:%s\n", symbolTable[i].name, symbolTable[i].parrentClass);
+               fprintf(temp,"Access modifier of symbol[%s]:%d\n", symbolTable[i].name, symbolTable[i].accessModifier);
                 if(strcmp(symbolTable[i].type, "char") == 0)
                {
-                    printf("The value of [%s]:%c\n", symbolTable[i].name, symbolTable[i].charValue);
+                    fprintf(temp,"The value of [%s]:%c\n", symbolTable[i].name, symbolTable[i].charValue);
                }
                else if(strcmp(symbolTable[i].type, "bool") == 0)
                {
-                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].boolValue);
+                    fprintf(temp,"The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].boolValue);
                }
                else if(strcmp(symbolTable[i].type, "int") == 0)
                {
-                    printf("The value of [%s]:%d\n", symbolTable[i].name, symbolTable[i].intVal);
+                    fprintf(temp,"The value of [%s]:%d\n", symbolTable[i].name, symbolTable[i].intVal);
                }
                else if(strcmp(symbolTable[i].type, "float") == 0)
                {
-                    printf("The value of [%s]:%f\n", symbolTable[i].name, symbolTable[i].floatValue);
+                    fprintf(temp,"The value of [%s]:%f\n", symbolTable[i].name, symbolTable[i].floatValue);
                }
                else if(strcmp(symbolTable[i].type, "string") == 0)
                {
-                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].stringValue);
+                    fprintf(temp,"The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].stringValue);
                }
 
                //
 
                for (int j = 0; j < symbolTable[i].numberOfObjValues; j++)
                {
-                    printf("The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].objValues[j].name);
-                    printf("The number of parameters of [%s]:%d\n", symbolTable[i].name, symbolTable[i].objValues[j].numberOfParameters);
+                    fprintf(temp,"The [%d] prop of [%s]:%s\n",j, symbolTable[i].name, symbolTable[i].objValues[j].name);
+                    fprintf(temp,"The number of [%d] parameters of [%s]:%d\n", j, symbolTable[i].name, symbolTable[i].objValues[j].numberOfParameters);
                }
           }
           
      }
+     fprintf(temp,"=================================\n");
+     fclose(f1);
+     fclose(f2);
 }
 void verifyTypeOfArgument(const char* argumentType, const char* parameterType){
 char errorMsg[100];
@@ -1620,8 +1662,7 @@ void verifyArgumentExistence(struct information* argument, int typeOfArgument, c
      char errorMsg[100];
      if(name != NULL)
      {    //printStackValues();
-           if(wasDefinedInCurrentScope(name) == 0 && wasDefinedInGlobalScope(name) == 0) // daca e functie sau var trb sa si verific sa fi fost definite ca puteam sa fac int x = functie(ceva), chiar daca ceva nu era definit before
- 
+           if(wasDefinedInCurrentScope(name) == 0 && wasDefinedInGlobalScope(name) == 0) 
           {    
                if(typeOfArgument == VARIABLE)    
                {
@@ -1746,6 +1787,9 @@ void changeScope()
      if (scope == 0) {
           scope = last_scope + 2;
           diffScope = scope;
+          ifID = 0;
+          whileID = 0;
+          forID = 0;
          
      } else {
           scope = scope + 1;
@@ -1764,7 +1808,9 @@ void revertScope()
           last_scope = scope;
           diffScope = 0;
           scope = 0;
-          
+          ifID = 0;
+          whileID = 0;
+          forID = 0;
           initScopeStack();
      } else {
           scope = scope - 1;
@@ -1948,8 +1994,15 @@ struct information* callFunctionClass(const char* name, const char* obj)
           sprintf(error_message, "[!]Instance %s not defined -> ", obj);
           yyerror(error_message);
      }
+     
      // Search for the function
      for (int i = 0; i < temp->numberOfObjValues; i++) {
+          if (i == temp->numberOfObjValues-1)
+          {
+               char error_message[100];
+               sprintf(error_message, "[!]Function not exist %s not defined -> ", name);
+               yyerror(error_message);
+          }
           if (strcmp(temp->objValues[i].name, name) == 0) {
                
                int numberOfParameters = temp->objValues[i].numberOfParameters;
@@ -1979,7 +2032,7 @@ struct information* callFunctionClass(const char* name, const char* obj)
                info->intVal = temp->objValues[i].intVal;
                if (temp->objValues[i].boolValue != NULL)strcpy(info->boolVal, temp->objValues[i].boolValue);
                if (temp->objValues[i].stringValue != NULL)strcpy(info->strVal, temp->objValues[i].stringValue);
-
+              
 
                return info;
           }

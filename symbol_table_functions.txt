@@ -1,0 +1,41 @@
+=================================
+Name of symbol[7]:functie1
+Type of symbol[7]:bool
+Scope of symbol[7]:0
+IFID of symbol[7]:0
+FORID of symbol[7]:0
+WHILEID of symbol[7]:0
+Scope Statement of symbol[7]:0
+Type of object of symbol[7]:2
+Number of parameters of symbol[7]:0
+Returned value of function[7]:true
+=================================
+Name of symbol[9]:functie2
+Type of symbol[9]:char
+Scope of symbol[9]:0
+IFID of symbol[9]:0
+FORID of symbol[9]:0
+WHILEID of symbol[9]:0
+Scope Statement of symbol[9]:0
+Type of object of symbol[9]:2
+Number of parameters of symbol[9]:1
+Returned value of function[9]:a
+--->Name of parameter[0]:par1
+--->Type of parameter[0]:int
+=================================
+Name of symbol[11]:functie3
+Type of symbol[11]:int
+Scope of symbol[11]:0
+IFID of symbol[11]:0
+FORID of symbol[11]:0
+WHILEID of symbol[11]:0
+Scope Statement of symbol[11]:0
+Type of object of symbol[11]:2
+Number of parameters of symbol[11]:3
+Returned value of function[11]:33
+--->Name of parameter[0]:par1
+--->Type of parameter[0]:int
+--->Name of parameter[1]:par2
+--->Type of parameter[1]:bool
+--->Name of parameter[2]:par3
+--->Type of parameter[2]:char

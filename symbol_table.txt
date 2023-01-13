@@ -1,0 +1,272 @@
+=================================
+Name of symbol[0]:a
+Type of symbol[0]:int
+Scope of symbol[0]:1
+IFID of symbol[0]:0
+FORID of symbol[0]:0
+WHILEID of symbol[0]:0
+Scope Statement of symbol[0]:0
+Type of object of symbol[0]:4
+Parrent class of symbol[a]:classTest
+Access modifier of symbol[a]:1
+The value of [a]:0
+=================================
+Name of symbol[1]:b
+Type of symbol[1]:int
+Scope of symbol[1]:1
+IFID of symbol[1]:0
+FORID of symbol[1]:0
+WHILEID of symbol[1]:0
+Scope Statement of symbol[1]:0
+Type of object of symbol[1]:4
+Parrent class of symbol[b]:classTest
+Access modifier of symbol[b]:0
+The value of [b]:0
+=================================
+Name of symbol[2]:method1Test
+Type of symbol[2]:int
+Scope of symbol[2]:1
+IFID of symbol[2]:0
+FORID of symbol[2]:0
+WHILEID of symbol[2]:0
+Scope Statement of symbol[2]:0
+Type of object of symbol[2]:4
+Parrent class of symbol[method1Test]:classTest
+Access modifier of symbol[method1Test]:1
+The value of [method1Test]:2
+=================================
+Name of symbol[3]:cv
+Type of symbol[3]:int
+Scope of symbol[3]:2
+IFID of symbol[3]:0
+FORID of symbol[3]:0
+WHILEID of symbol[3]:0
+Scope Statement of symbol[3]:0
+Type of object of symbol[3]:4
+Parrent class of symbol[cv]:classTest
+Access modifier of symbol[cv]:1
+The value of [cv]:2
+=================================
+Name of symbol[4]:method2Test
+Type of symbol[4]:int
+Scope of symbol[4]:1
+IFID of symbol[4]:0
+FORID of symbol[4]:0
+WHILEID of symbol[4]:0
+Scope Statement of symbol[4]:0
+Type of object of symbol[4]:4
+Parrent class of symbol[method2Test]:classTest
+Access modifier of symbol[method2Test]:0
+The value of [method2Test]:2
+=================================
+Name of symbol[5]:altcv
+Type of symbol[5]:int
+Scope of symbol[5]:2
+IFID of symbol[5]:0
+FORID of symbol[5]:0
+WHILEID of symbol[5]:0
+Scope Statement of symbol[5]:0
+Type of object of symbol[5]:4
+Parrent class of symbol[altcv]:classTest
+Access modifier of symbol[altcv]:0
+The value of [altcv]:2
+=================================
+Name of symbol[6]:classTest
+Type of symbol[6]:class
+Scope of symbol[6]:0
+IFID of symbol[6]:0
+FORID of symbol[6]:0
+WHILEID of symbol[6]:0
+Scope Statement of symbol[6]:0
+Type of object of symbol[6]:3
+classTest is a class! 
+=================================
+Name of symbol[8]:var1
+Type of symbol[8]:bool
+Scope of symbol[8]:3
+IFID of symbol[8]:0
+FORID of symbol[8]:0
+WHILEID of symbol[8]:0
+Scope Statement of symbol[8]:0
+Type of object of symbol[8]:1
+Is constant of symbol[8]:0
+Value of symbol[8]:true
+=================================
+Name of symbol[10]:var1
+Type of symbol[10]:char
+Scope of symbol[10]:5
+IFID of symbol[10]:0
+FORID of symbol[10]:0
+WHILEID of symbol[10]:0
+Scope Statement of symbol[10]:0
+Type of object of symbol[10]:1
+Is constant of symbol[10]:0
+Value of symbol[10]:a
+=================================
+Name of symbol[12]:bad
+Type of symbol[12]:int
+Scope of symbol[12]:7
+IFID of symbol[12]:0
+FORID of symbol[12]:0
+WHILEID of symbol[12]:0
+Scope Statement of symbol[12]:0
+Type of object of symbol[12]:1
+Is constant of symbol[12]:0
+Value of symbol[12]:0
+=================================
+Name of symbol[13]:array2
+Type of symbol[13]:string
+Scope of symbol[13]:9
+IFID of symbol[13]:0
+FORID of symbol[13]:0
+WHILEID of symbol[13]:0
+Scope Statement of symbol[13]:0
+Type of object of symbol[13]:6
+Array elements: 'NULL'  'NULL'  'NULL'  'TEST'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  =================================
+Name of symbol[14]:var1
+Type of symbol[14]:int
+Scope of symbol[14]:9
+IFID of symbol[14]:0
+FORID of symbol[14]:0
+WHILEID of symbol[14]:0
+Scope Statement of symbol[14]:0
+Type of object of symbol[14]:1
+Is constant of symbol[14]:0
+Value of symbol[14]:300
+=================================
+Name of symbol[15]:var2
+Type of symbol[15]:float
+Scope of symbol[15]:9
+IFID of symbol[15]:0
+FORID of symbol[15]:0
+WHILEID of symbol[15]:0
+Scope Statement of symbol[15]:0
+Type of object of symbol[15]:1
+Is constant of symbol[15]:0
+Value of symbol[15]:40.000000
+=================================
+Name of symbol[16]:array1
+Type of symbol[16]:int
+Scope of symbol[16]:9
+IFID of symbol[16]:0
+FORID of symbol[16]:0
+WHILEID of symbol[16]:0
+Scope Statement of symbol[16]:0
+Type of object of symbol[16]:6
+Array elements: '0'  '0'  '20'  '0'  '0'  '0'  '0'  '0'  '0'  '0'  =================================
+Name of symbol[17]:obj
+Type of symbol[17]:instance
+Scope of symbol[17]:9
+IFID of symbol[17]:0
+FORID of symbol[17]:0
+WHILEID of symbol[17]:0
+Scope Statement of symbol[17]:0
+Type of object of symbol[17]:5
+Parrent class of symbol[obj]:classTest
+Access modifier of symbol[obj]:0
+The [0] prop of [obj]:a
+The number of [0] parameters of [obj]:0
+The [1] prop of [obj]:method1Test
+The number of [1] parameters of [obj]:2
+The [2] prop of [obj]:cv
+The number of [2] parameters of [obj]:0
+=================================
+Name of symbol[18]:xx
+Type of symbol[18]:int
+Scope of symbol[18]:9
+IFID of symbol[18]:0
+FORID of symbol[18]:0
+WHILEID of symbol[18]:0
+Scope Statement of symbol[18]:0
+Type of object of symbol[18]:1
+Is constant of symbol[18]:0
+Value of symbol[18]:2
+=================================
+Name of symbol[19]:ok
+Type of symbol[19]:int
+Scope of symbol[19]:9
+IFID of symbol[19]:0
+FORID of symbol[19]:0
+WHILEID of symbol[19]:0
+Scope Statement of symbol[19]:0
+Type of object of symbol[19]:1
+Is constant of symbol[19]:0
+Value of symbol[19]:33
+=================================
+Name of symbol[20]:var4
+Type of symbol[20]:int
+Scope of symbol[20]:9
+IFID of symbol[20]:0
+FORID of symbol[20]:0
+WHILEID of symbol[20]:0
+Scope Statement of symbol[20]:0
+Type of object of symbol[20]:1
+Is constant of symbol[20]:1
+Value of symbol[20]:30
+=================================
+Name of symbol[21]:teste
+Type of symbol[21]:int
+Scope of symbol[21]:10
+IFID of symbol[21]:1
+FORID of symbol[21]:0
+WHILEID of symbol[21]:0
+Scope Statement of symbol[21]:1
+Type of object of symbol[21]:1
+Is constant of symbol[21]:0
+Value of symbol[21]:0
+=================================
+Name of symbol[22]:teste
+Type of symbol[22]:int
+Scope of symbol[22]:9
+IFID of symbol[22]:0
+FORID of symbol[22]:0
+WHILEID of symbol[22]:0
+Scope Statement of symbol[22]:0
+Type of object of symbol[22]:1
+Is constant of symbol[22]:0
+Value of symbol[22]:0
+=================================
+Name of symbol[23]:testt
+Type of symbol[23]:int
+Scope of symbol[23]:12
+IFID of symbol[23]:1
+FORID of symbol[23]:1
+WHILEID of symbol[23]:1
+Scope Statement of symbol[23]:3
+Type of object of symbol[23]:1
+Is constant of symbol[23]:0
+Value of symbol[23]:0
+=================================
+Name of symbol[24]:testt
+Type of symbol[24]:int
+Scope of symbol[24]:12
+IFID of symbol[24]:1
+FORID of symbol[24]:1
+WHILEID of symbol[24]:1
+Scope Statement of symbol[24]:4
+Type of object of symbol[24]:1
+Is constant of symbol[24]:0
+Value of symbol[24]:0
+=================================
+Name of symbol[25]:testt
+Type of symbol[25]:int
+Scope of symbol[25]:11
+IFID of symbol[25]:0
+FORID of symbol[25]:1
+WHILEID of symbol[25]:1
+Scope Statement of symbol[25]:4
+Type of object of symbol[25]:1
+Is constant of symbol[25]:0
+Value of symbol[25]:0
+=================================
+Name of symbol[26]:testt
+Type of symbol[26]:int
+Scope of symbol[26]:10
+IFID of symbol[26]:0
+FORID of symbol[26]:1
+WHILEID of symbol[26]:0
+Scope Statement of symbol[26]:4
+Type of object of symbol[26]:1
+Is constant of symbol[26]:0
+Value of symbol[26]:0
+=================================
