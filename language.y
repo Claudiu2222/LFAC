@@ -75,10 +75,11 @@ struct parameter{
      struct information info;
 };
 
+
 struct objval {
-     char name[50];      // 
-     char type[30];      // 
-     int isConstant;     //
+     char name[50];      
+     char type[30];      
+     int isConstant;   
 
      char charValue;
      int intVal;
@@ -98,10 +99,10 @@ struct objval {
 
 
 struct symbol{
-     char name[50]; // 
-     char type[30];     //
-     int scope;    // 
-     int isConstant; //
+     char name[50];  
+     char type[30];     
+     int scope;    
+     int isConstant; 
      int typeOfObject; // 1 var, 2 functie, 3 clasa, 4 membru de clasa, 5 array
      char parrentClass[50];
      int accessModifier;
@@ -118,14 +119,15 @@ struct symbol{
      char **booleanVector;
      int vectorSize;
 
+
      int ifID;
      int whileID;
      int forID;
      int scopeStatement;
-     
+     // pt functii si metode
      struct parameter parameters[MAXPARAMETERS];
      int numberOfParameters;
-
+     // pt clase
      struct objval objValues[MAXSYMBOLS];
      int numberOfObjValues;
 
@@ -216,7 +218,6 @@ int wasDefinedInGlobalScope(const char* name);
 int wasDefinedInCurrentScope(const char* name);
 
 void printStackValues();
-void test(const char* name);
 
 
 
@@ -224,7 +225,7 @@ void test(const char* name);
 
 struct information* getInformationFromInstance(const char* name, const char* prop);
 void addFunctionToTableFromClass(const char* name, const char* parrentClass);
-void addFunctionToInstantce(const char* name, const char* instance);
+
 
 // Argument System
 struct argument{
@@ -248,9 +249,10 @@ void delete_args(){
 };
 
 struct information* callFunctionClass(const char* name, const char* class);
-// ----
+
 %}
 
+//union data type to associate semantic values with the tokens or the non-terminal symbols
 %union {
   char* strVal;
   int intVal;
@@ -262,6 +264,7 @@ struct information* callFunctionClass(const char* name, const char* class);
   struct parameter *param;
 
 }
+//define keywords
 %token BEGIN_PR END_PR INSTANCEOF ELIF RETURN CONSTANT IF ELSE WHILE FOR CLASS LESSTHAN LESSOREQUALTHAN GREATERTHAN EQUAL GREATEROREQUALTHAN AND OR NEGATION PLUS MINUS MULTIPLICATION DIVISION ASSIGN LEFTBRACKET RIGHTBRACKET EVAL TYPEOF PRINT
 
 %token <strVal>TYPE
@@ -271,8 +274,9 @@ struct information* callFunctionClass(const char* name, const char* class);
 %token <charVal>CHAR
 %token <strVal>STRING
 %token <strVal>ACCESSMODIFIER
-
 %token <strVal>ID 
+
+//define non-terminal symbols storing information in the corresponding structure
 %type<info>expresii
 %type<param>parametru
 %type<info>returnedvalue
@@ -321,11 +325,9 @@ class_dec : ACCESSMODIFIER TYPE ID ';' {strcpy(accesModifier, $1); addVariableTo
           | ACCESSMODIFIER TYPE ID {inFunction=1; strcpy(accesModifier, $1); addFunctionToTable($2, $3, scope); strcpy(currentFunction, $3); currentFunctionIndex=symbolTableIndex-1;} '(' {changeScope();} lista_parametri ')'  LEFTBRACKET list RETURN returnedvalue NEGATION {if (strcmp($12->type,$2)!=0){yyerror("[!] Returned value does not match function's type");} updateVariable($3,$12); free($12);inFunction=0;} rightbracket //function
           ;
 
-declaratii_comune: TYPE ID ';' 
-                    {addVariableToTable($2, $1, scope, NONCONSTANT , 0);}//variable
+declaratii_comune: TYPE ID ';' {addVariableToTable($2, $1, scope, NONCONSTANT , 0);}//variable
 
-                 | TYPE ID ASSIGN  expresii ';' 
-                    {addVariableToTable($2, $1, scope, NONCONSTANT , $4); free($4); } //variable or array - assign
+                 | TYPE ID ASSIGN  expresii ';' {addVariableToTable($2, $1, scope, NONCONSTANT , $4); free($4); } //variable or array - assign
 
                  | TYPE '[' NUMBER ']' ID ';' {addArrayToTable($1, $3, $5, scope);} // array
                  | ID ASSIGN expresii ';' { updateVariable($1, $3);  free($3); } //variable or array - assign -> la fel, dar fara type -> trb verificat daca a fost declarata inainte
@@ -357,13 +359,13 @@ expresii:  expresii MULTIPLICATION expresii {struct information *temp=(struct in
           
           | ID '.' ID {init_new_args();} '(' lista_argumente_2 ')' {struct information *temp = callFunctionClass($3, $1); delete_args(); $$=temp; }    
           
-          | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
-          //| ID {init_new_args();} '(' lista_argumente_2 ')' {struct information *temp = callFunction($1); delete_args(); $$=temp; }    
+          | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;}     
           | ID  {currentCalledFunctionIndex=0; currentParameterIndex[currentCalledFunctionIndex]=0; calledFunction[currentCalledFunctionIndex]=lookUpElement($1); if(calledFunction[currentCalledFunctionIndex] == NULL){yyerror("[!] Function does not exist");} } '(' lista_argumente ')' { if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");}struct information *temp=getInformationFromTable($1); $$=temp;}
           | ID '[' NUMBER ']'  {struct information *temp= arrayValueAtIndex($1, $3); $$=temp;} // array at index NUMBER 
           | ID      {struct information *temp = getInformationFromTable($1);  verifyIfSymbolNameIsAVariable($1); $$=temp;} 
           
           ;
+
 //ifStatement
 
 lista_argumente_2: /*epsilon*/ 
@@ -420,7 +422,9 @@ arg:      arg MULTIPLICATION arg {struct information *temp=(struct information*)
           | STRING  {struct information *temp=(struct information*)malloc(sizeof(struct information));strcpy(temp->strVal,$1); strcpy(temp->type,_string); $$=temp;} 
           | BOOLEANVALUE {struct information *temp=(struct information*)malloc(sizeof(struct information)); strcpy(temp->boolVal,$1); strcpy(temp->type,_bool); $$=temp;} 
           | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
-/*fct*/   | ID  {currentCalledFunctionIndex++; currentParameterIndex[currentCalledFunctionIndex]=0; calledFunction[currentCalledFunctionIndex]=lookUpElement($1); if(calledFunction[currentCalledFunctionIndex] == NULL){yyerror("[!] Function does not exist"); }  struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, FUNCTION, $1); verifyIfSymbolNameIsAFunction($1); free($1); } '(' lista_argumente ')' {if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");} struct information *temp=getInformationFromTable(calledFunction[currentCalledFunctionIndex]->name); currentCalledFunctionIndex--; $$=temp;} 
+/*fct*/   | ID  {currentCalledFunctionIndex++; currentParameterIndex[currentCalledFunctionIndex]=0; calledFunction[currentCalledFunctionIndex]=lookUpElement($1); if(calledFunction[currentCalledFunctionIndex] == NULL){yyerror("[!] Function does not exist"); }  
+                    struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, FUNCTION, $1); verifyIfSymbolNameIsAFunction($1); free($1); } '(' lista_argumente ')' {if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");}
+                    struct information *temp = getInformationFromTable(calledFunction[currentCalledFunctionIndex]->name); currentCalledFunctionIndex--; $$=temp;} 
           | ID '.' ID {init_new_args();} '(' lista_argumente_2 ')' {struct information *temp = callFunctionClass($3, $1); delete_args(); $$=temp; }    
           | ID '[' NUMBER ']'  { verifyIfSymbolNameIsAnArray($1); struct information *temp= arrayValueAtIndex($1, $3);  $$=temp;} // array at index NUMBER 
           | ID      {struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, VARIABLE, $1); verifyIfSymbolNameIsAVariable($1);   $$=temp;} 
@@ -472,9 +476,11 @@ expresii_booleene:  expresii_booleene AND expresii_booleene {struct information 
           
           | ID '.' ID {init_new_args();} '(' lista_argumente_2 ')' {struct information *temp = callFunctionClass($3, $1); delete_args(); $$=temp; }    
           
-          | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;} 
-          //| ID {init_new_args();} '(' lista_argumente_2 ')' {struct information *temp = callFunction($1); delete_args(); $$=temp; }    
-          | ID  {currentCalledFunctionIndex++; currentParameterIndex[currentCalledFunctionIndex]=0; calledFunction[currentCalledFunctionIndex]=lookUpElement($1); if(calledFunction[currentCalledFunctionIndex] == NULL){yyerror("[!] Function does not exist");}  struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, FUNCTION, $1); verifyIfSymbolNameIsAFunction($1); free($1); } '(' lista_argumente ')' {if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");} struct information *temp=getInformationFromTable(calledFunction[currentCalledFunctionIndex]->name); currentCalledFunctionIndex--; $$=temp;} 
+          | ID '.' ID {struct information *temp = getInformationFromInstance($1, $3); $$=temp;}    
+          | ID  {currentCalledFunctionIndex++; currentParameterIndex[currentCalledFunctionIndex]=0; calledFunction[currentCalledFunctionIndex]=lookUpElement($1); if(calledFunction[currentCalledFunctionIndex] == NULL){yyerror("[!] Function does not exist");}
+            struct information *temp = getInformationFromTable($1); verifyArgumentExistence(temp, FUNCTION, $1); verifyIfSymbolNameIsAFunction($1); free($1); } '(' lista_argumente ')' 
+            {if(currentParameterIndex[currentCalledFunctionIndex] < calledFunction[currentCalledFunctionIndex]->numberOfParameters){yyerror("[!] Not enough parameters");} struct information *temp=getInformationFromTable(calledFunction[currentCalledFunctionIndex]->name);
+             currentCalledFunctionIndex--; $$=temp;} 
           | ID '[' NUMBER ']'  {struct information *temp= arrayValueAtIndex($1, $3); $$=temp;} // array at index NUMBER 
           | ID      {struct information *temp = getInformationFromTable($1);  verifyIfSymbolNameIsAVariable($1); $$=temp;} 
           
@@ -502,6 +508,7 @@ printInfo();
 } 
 
 // -- Functions --
+// Returns values information from an element from the symbol table
 struct information* getInformationFromTable(const char* name) {
   //   printf(" %s IN GETINFO ", name);
      
@@ -527,6 +534,8 @@ struct information* getInformationFromTable(const char* name) {
      return NULL;
 }
 
+
+// Returns values information for class property
 struct information* getInformationFromInstance(const char* name, const char* prop) {
           
      // Search for the instance 
@@ -600,16 +609,17 @@ struct information* arrayValueAtIndex(const char* name, int index){
      if (temp->booleanVector[index] != NULL) strcpy(temp2->boolVal, temp->booleanVector[index]);
      return temp2;
 } 
+
 int wasDefinedInCurrentScope(const char* name) {
      if(inFunction == 1)
-     {
+     {    //verifies if it was declared as a parameter
           for(int i=0; i < symbolTable[currentFunctionIndex].numberOfParameters; i++)
                if(strcmp(symbolTable[currentFunctionIndex].parameters[i].name, name) == 0)
                     return 1;
      }
      for(int i=0; i < MAXSYMBOLS; i++) {
           if(strcmp(scopeStack[i], name) == 0)
-               // Cautam scopeStack[i] in symbolTable
+               // Search scopeStack[i] in symbolTable
                {
                     for (int j = 0; j < symbolTableIndex; j++) {
                          if(strcmp(symbolTable[j].name, scopeStack[i]) == 0 ) {
@@ -622,13 +632,6 @@ int wasDefinedInCurrentScope(const char* name) {
                                    
                                    if (symbolTable[j].ifID < ifID || symbolTable[j].whileID < whileID || symbolTable[j].forID < forID)
                                         return 1;
-
-                                   // Suntem in scop comun, adica scop de functie
-                                   //if(symbolTable[j].ifID < ifID || symbolTable[j].whileID < whileID || symbolTable[j].forID < forID)
-                                   //    return 1;
-                                   //if (symbolTable[j].ifID == 0 || symbolTable[j].whileID == 0 || symbolTable[j].forID == 0)
-                                   //     return 1;
-                                   //else return 0;
                               } 
                          }
                     }
@@ -772,14 +775,10 @@ void addFunctionToTable( char* functionType, char *functionName, int scope){
           pushGlobalStack(functionName);
      } else {
           pushScopeStack(functionName);
-     } // pana cand doar in global scope
-}
-void addFunctionToInstantce(const char* name, const char* instance)
-{
-
+     } 
 }
 
-// !INFO: La moment doar adaug parametrul in stacul local, dar ei nu sunt salvati nicaieri
+// !INFO: La moment doar adaug parametrul in stackul local, dar ei nu sunt salvati nicaieri
 void addParameterToFunction(struct symbol *functie, struct parameter* param){
 
      //Verificam daca numele parametrului nu este deja folosit
@@ -789,11 +788,6 @@ void addParameterToFunction(struct symbol *functie, struct parameter* param){
           free(param);
           yyerror(error_message);
      }
-     /* else if (wasDefinedInGlobalScope(param->name) == 1){
-          sprintf(error_message, "[!]Parameter already defined in global scope : %s  -> ", param->name);
-          free(param);
-          yyerror(error_message);
-     } */
 
      if(functie->numberOfParameters > MAXPARAMETERS)
      {    
@@ -1059,6 +1053,7 @@ void printInfo()
                     
                     fprintf(temp,"\'  ");
                }
+               fprintf(temp,"\n");
           } 
           else if (symbolTable[i].typeOfObject == OBJECT) {
                fprintf(temp,"Parrent class of symbol[%s]:%s\n", symbolTable[i].name, symbolTable[i].parrentClass);
@@ -1084,13 +1079,7 @@ void printInfo()
                     fprintf(temp,"The value of [%s]:%s\n", symbolTable[i].name, symbolTable[i].stringValue);
                }
 
-               //
-
-               for (int j = 0; j < symbolTable[i].numberOfObjValues; j++)
-               {
-                    fprintf(temp,"The [%d] prop of [%s]:%s\n",j, symbolTable[i].name, symbolTable[i].objValues[j].name);
-                    fprintf(temp,"The number of [%d] parameters of [%s]:%d\n", j, symbolTable[i].name, symbolTable[i].objValues[j].numberOfParameters);
-               }
+     
           }
           
      }
@@ -1532,6 +1521,9 @@ void unaryNegation(struct information* finalExp, struct information* leftExp)
           yyerror("[!]Illegal boolean operation");
      }
 }
+// Folosita pentru a verifica daca un element este in tabela de simboluri
+// Daca este in tabela de simboluri, returneaza structura corespunzatoare
+// Daca nu este in tabela de simboluri, returneaza NULL
 struct symbol* lookUpElement(const char* name){
      // Check daca este in global dupa in local stack
      struct symbol* temp = NULL;
@@ -1571,6 +1563,7 @@ struct symbol* lookUpElement(const char* name){
      return NULL;
      
 }
+//not used
 void updateParameterValue(struct information* info, int typeOfArgument)
 {
      if(typeOfArgument == LITERAL)
@@ -1685,16 +1678,6 @@ void verifyArgumentExistence(struct information* argument, int typeOfArgument, c
     
 }
 
-void test(const char* name)
-{
-     struct symbol* temp = lookUpElement(name);
-     if(temp == NULL)
-          yyerror("[!]Variable not declared");
-     else
-     {
-          printf("Name: %s, Type: %s, Value: %d, Scope: %d\n", temp->name, temp->type, temp->intVal, temp->scope);
-     }
-}
 void calculate(struct information* finalExp, struct information* leftExp, struct information* rightExp, int typeOfOperation)
 {
      if(rightExp!=NULL)
@@ -1796,12 +1779,15 @@ void changeScope()
           
      }
 }
+/*
+***for testing
 
-void printStackValues(){ // for testing
+void printStackValues(){ 
      printf("STACK VALUES: ");
      for(int i=0; i<MAXPARAMETERS;i++)
      printf("%s,",scopeStack[i]);
-}
+}*/
+
 void revertScope()
 {
      if (scope - diffScope == 0) {
@@ -1933,7 +1919,7 @@ void addInstanceToTable(const char* name, const char* className) {
      symbolTable[symbolTableIndex].numberOfObjValues=0;
      
 
-     // 2. Daca exista, continuam prin a adauga in .values, variabilele din clasa
+     //  Daca exista, continuam prin a adauga in .values, variabilele din clasa
      for (int i = 0; i < symbolTableIndex; i++) {
 
           // Daca gasim un symbol care are parrentClass = className il adaugma in obbjvals
@@ -2039,6 +2025,3 @@ struct information* callFunctionClass(const char* name, const char* obj)
      }
 }
 
-struct information* callFunction(const char* name) {
-     
-}

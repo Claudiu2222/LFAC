@@ -122,7 +122,8 @@ FORID of symbol[13]:0
 WHILEID of symbol[13]:0
 Scope Statement of symbol[13]:0
 Type of object of symbol[13]:6
-Array elements: 'NULL'  'NULL'  'NULL'  'TEST'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  =================================
+Array elements: 'NULL'  'NULL'  'NULL'  'TEST'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  'NULL'  
+=================================
 Name of symbol[14]:var1
 Type of symbol[14]:int
 Scope of symbol[14]:9
@@ -153,7 +154,8 @@ FORID of symbol[16]:0
 WHILEID of symbol[16]:0
 Scope Statement of symbol[16]:0
 Type of object of symbol[16]:6
-Array elements: '0'  '0'  '20'  '0'  '0'  '0'  '0'  '0'  '0'  '0'  =================================
+Array elements: '0'  '0'  '20'  '0'  '0'  '0'  '0'  '0'  '0'  '0'  
+=================================
 Name of symbol[17]:obj
 Type of symbol[17]:instance
 Scope of symbol[17]:9
@@ -164,12 +166,6 @@ Scope Statement of symbol[17]:0
 Type of object of symbol[17]:5
 Parrent class of symbol[obj]:classTest
 Access modifier of symbol[obj]:0
-The [0] prop of [obj]:a
-The number of [0] parameters of [obj]:0
-The [1] prop of [obj]:method1Test
-The number of [1] parameters of [obj]:2
-The [2] prop of [obj]:cv
-The number of [2] parameters of [obj]:0
 =================================
 Name of symbol[18]:xx
 Type of symbol[18]:int
